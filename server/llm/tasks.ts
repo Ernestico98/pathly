@@ -24,7 +24,8 @@ Reglas:
 - No conviertas expectativas en hechos: "me dirán si paso" NO es "avanza a la siguiente ronda".
 - Respeta cifras y monedas tal como las escribe el usuario (si dice 75k sin moneda, no añadas $ ni €).
 - Los temas, decisiones y siguientes pasos de una entrada salen SOLO de las notas de esa entrada, no del contexto previo.
-- Escribe en segunda persona o impersonal, sin adornos ("Se llevó a cabo…" sobra). Sé conciso y concreto; prioriza lo que le servirá al usuario para preparar la siguiente entrevista.`;
+- Escribe en primera persona, como si fueran las notas del propio usuario ("Hablé con la CTO…"), nunca "el candidato". Sin adornos ("Se llevó a cabo…" sobra). Respeta los términos técnicos tal cual (evals, RAG, queues…).
+- Sé conservador con estados y fases: sugiere un cambio solo si las notas lo dicen claramente; una primera conversación con un CTO/CEO no es la fase final. Sé conciso y concreto; prioriza lo que le servirá al usuario para preparar la siguiente entrevista.`;
 
 // ---------------------------------------------------------------- entry
 

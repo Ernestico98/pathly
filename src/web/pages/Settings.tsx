@@ -128,6 +128,7 @@ function DataSection() {
   const qc = useQueryClient();
   const file = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<"merge" | "replace">("merge");
+  const [picked, setPicked] = useState<File | null>(null);
   const imp = useMutation({
     mutationFn: async (f: File) => {
       let data: unknown;
@@ -144,6 +145,7 @@ function DataSection() {
     onSuccess: () => qc.invalidateQueries(),
     onSettled: () => {
       if (file.current) file.current.value = "";
+      setPicked(null);
     },
   });
 
@@ -181,12 +183,14 @@ function DataSection() {
           type="file"
           accept="application/json,.json"
           className="block text-sm file:mr-3 file:rounded-lg file:border file:border-border file:bg-surface file:px-3 file:py-1.5 file:text-sm file:text-text"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) imp.mutate(f);
-          }}
-          aria-label="Importar fichero JSON"
+          onChange={(e) => setPicked(e.target.files?.[0] ?? null)}
+          aria-label="Fichero JSON a importar"
         />
+        {picked && (
+          <button className={`btn mt-3 ${mode === "replace" ? "btn-danger" : "btn-primary"}`} onClick={() => imp.mutate(picked)} disabled={imp.isPending}>
+            {mode === "replace" ? "Reemplazar todo con" : "Importar"} {picked.name}
+          </button>
+        )}
         <div className="mt-2">
           {imp.isPending && <Spinner label="Importando…" />}
           {imp.data && (

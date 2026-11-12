@@ -25,7 +25,7 @@ const STATUS_ICON: Record<ProcessStatus, string> = {
   declined: "↩",
   rejected: "✕",
   withdrawn: "–",
-  ghosted: "…",
+  ghosted: "○",
 };
 
 export function StatusBadge({ status }: { status: ProcessStatus }) {
@@ -147,6 +147,13 @@ export function ListInput({ value, onChange, placeholder, rows = 3 }: { value: s
     />
   );
 }
+
+/** Accept "acme.com" as a URL: add https:// when the scheme is missing. */
+export const normalizeUrl = (v: string) => {
+  const s = v.trim();
+  if (!s) return "";
+  return /^https?:\/\//i.test(s) ? s : `https://${s}`;
+};
 
 export const fmtDate = (d: string | null | undefined, approx = false) => {
   if (!d) return "Sin fecha";

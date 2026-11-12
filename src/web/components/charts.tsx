@@ -64,8 +64,11 @@ export function BarList({
 /** Vertical columns over time with a hover tooltip. */
 export function Columns({ data, caption, valueLabel }: { data: { x: string; label: string; value: number }[]; caption: string; valueLabel: string }) {
   const [hover, setHover] = useState<number | null>(null);
-  const max = Math.max(1, ...data.map((d) => d.value));
-  const ticks = max <= 4 ? Array.from({ length: max + 1 }, (_, i) => i) : [0, Math.round(max / 2), max];
+  // Integer ticks on a "nice" step; the scale top is the last tick so bars and gridlines agree.
+  const peak = Math.max(1, ...data.map((d) => d.value));
+  const step = peak <= 4 ? 1 : Math.ceil(peak / 3);
+  const max = Math.ceil(peak / step) * step;
+  const ticks = Array.from({ length: max / step + 1 }, (_, i) => i * step);
   const H = 140;
   return (
     <div className="relative">
@@ -103,12 +106,14 @@ export function Columns({ data, caption, valueLabel }: { data: { x: string; labe
               </div>
             ))}
           </div>
-          <div className="mt-1.5 flex gap-[2px] text-[10px] text-text-3">
-            {data.map((d, i) => (
-              <span key={d.x} className="flex-1 truncate text-center">
-                {i % 4 === 0 || i === data.length - 1 ? d.label : ""}
-              </span>
-            ))}
+          <div className="relative mt-1.5 h-4 text-[10px] text-text-3">
+            {data.map((d, i) =>
+              i % 4 === 0 || i === data.length - 1 ? (
+                <span key={d.x} className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: `${((i + 0.5) / data.length) * 100}%` }}>
+                  {d.label}
+                </span>
+              ) : null,
+            )}
           </div>
           {hover !== null && data[hover] && (
             <div

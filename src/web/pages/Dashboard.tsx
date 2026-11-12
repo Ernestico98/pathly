@@ -25,9 +25,6 @@ export default function Dashboard() {
           <h1 className="text-xl font-semibold tracking-tight">Resumen</h1>
           <p className="text-sm text-text-2">Cómo va la búsqueda ahora mismo.</p>
         </div>
-        <Link to="/procesos/nuevo" className="btn btn-primary sm:hidden">
-          + Nuevo proceso
-        </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -60,7 +57,7 @@ export default function Dashboard() {
                 </div>
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-3">
                   <span>Fase: {STAGE_LABEL[p.stage]}</span>
-                  <span>{p.entryCount} entradas</span>
+                  <span>{p.entryCount} {p.entryCount === 1 ? "entrada" : "entradas"}</span>
                   <span>Última actividad: {relDays(p.lastEntryDate ?? p.appliedAt)}</span>
                 </div>
                 {p.summary && <p className="mt-2 line-clamp-2 text-sm text-text-2">{p.summary.replace(/[#*_`>-]/g, "")}</p>}
@@ -71,7 +68,7 @@ export default function Dashboard() {
       </section>
 
       <div className="grid gap-8 md:grid-cols-2">
-        <section>
+        <section className="min-w-0">
           <SectionTitle>Necesitan atención</SectionTitle>
           {a.stale.length === 0 ? (
             <Empty>Todo al día.</Empty>
@@ -110,7 +107,7 @@ export default function Dashboard() {
           )}
         </section>
 
-        <section>
+        <section className="min-w-0">
           <SectionTitle>Actividad reciente</SectionTitle>
           {a.recent.length === 0 ? (
             <Empty>Aún no hay entradas.</Empty>

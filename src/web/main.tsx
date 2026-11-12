@@ -24,7 +24,7 @@ function Layout() {
   return (
     <div className="min-h-dvh">
       <header className="sticky top-0 z-20 border-b border-border bg-surface/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-2.5">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5">
           <NavLink to="/" className="flex items-center gap-2 font-semibold tracking-tight">
             <svg viewBox="0 0 32 32" className="h-6 w-6" aria-hidden>
               <rect width="32" height="32" rx="8" fill="var(--accent)" />
@@ -32,7 +32,7 @@ function Layout() {
             </svg>
             Pathly
           </NavLink>
-          <nav className="flex min-w-0 flex-1 gap-1 overflow-x-auto" aria-label="Principal">
+          <nav className="order-last -mx-2 flex w-full gap-1 overflow-x-auto sm:order-none sm:mx-0 sm:w-auto sm:flex-1" aria-label="Principal">
             {NAV.map((n) => (
               <NavLink
                 key={n.to}
@@ -46,8 +46,8 @@ function Layout() {
               </NavLink>
             ))}
           </nav>
-          <NavLink to="/procesos/nuevo" className="btn btn-primary hidden sm:inline-flex">
-            + Nuevo proceso
+          <NavLink to="/procesos/nuevo" className="btn btn-primary ml-auto sm:ml-0">
+            + <span className="hidden sm:inline">Nuevo proceso</span><span className="sm:hidden">Nuevo</span>
           </NavLink>
         </div>
       </header>

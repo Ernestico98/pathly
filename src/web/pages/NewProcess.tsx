@@ -4,7 +4,7 @@ import { useNavigate } from "react-router";
 import { SOURCE_LABEL, STATUS_LABEL, WORK_MODE_LABEL } from "../../shared/labels";
 import { SOURCES, WORK_MODES, type ProcessStatus } from "../../shared/schema";
 import { api } from "../api";
-import { ErrorBox, Field, MarkdownEditor, Spinner, todayIso } from "../components/ui";
+import { ErrorBox, Field, MarkdownEditor, Spinner, normalizeUrl, todayIso } from "../components/ui";
 
 const INITIAL_STATUSES: ProcessStatus[] = ["wishlist", "applied", "ongoing"];
 
@@ -110,7 +110,7 @@ export default function NewProcess() {
             </datalist>
           </Field>
           <Field label="Web">
-            <input className="input" type="url" placeholder="https://…" value={website} onChange={(e) => setWebsite(e.target.value)} />
+            <input className="input" inputMode="url" placeholder="acme.com" value={website} onChange={(e) => setWebsite(e.target.value)} onBlur={(e) => setWebsite(normalizeUrl(e.target.value))} />
           </Field>
         </div>
         <Field label="Lo que ya sabes (opcional)" hint="Se usa como contexto para la ficha.">
@@ -137,7 +137,7 @@ export default function NewProcess() {
             <input className="input" value={role} onChange={(e) => setRole(e.target.value)} placeholder="p. ej. Senior AI Engineer" />
           </Field>
           <Field label="Link a la oferta">
-            <input className="input" type="url" value={jobUrl} onChange={(e) => setJobUrl(e.target.value)} placeholder="https://…" />
+            <input className="input" inputMode="url" value={jobUrl} onChange={(e) => setJobUrl(e.target.value)} onBlur={(e) => setJobUrl(normalizeUrl(e.target.value))} placeholder="https://…" />
           </Field>
         </div>
         {showPaste ? (

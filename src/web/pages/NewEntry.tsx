@@ -209,7 +209,7 @@ export default function NewEntry() {
                     </option>
                   ))}
                 </select>
-                <input className="input min-w-48 flex-1" placeholder="Motivo" value={draft.statusReason} onChange={(e) => set("statusReason", e.target.value)} />
+                <input className="input w-full" placeholder="Motivo" value={draft.statusReason} onChange={(e) => set("statusReason", e.target.value)} />
               </div>
             )}
           </div>

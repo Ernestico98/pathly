@@ -23,7 +23,7 @@ import {
   type StatusChange,
 } from "../../shared/schema";
 import { api } from "../api";
-import { Empty, ErrorBox, Field, ListInput, MarkdownEditor, Md, Spinner, StatusBadge, fmtDate, relDays, todayIso } from "../components/ui";
+import { Empty, ErrorBox, Field, ListInput, MarkdownEditor, Md, Spinner, StatusBadge, fmtDate, normalizeUrl, relDays, todayIso } from "../components/ui";
 
 type Tab = "cronologia" | "preparacion" | "datos";
 
@@ -98,7 +98,8 @@ function Header({ p }: { p: PD }) {
           <h1 className="text-2xl font-semibold tracking-tight">{p.company.name}</h1>
           <p className="text-text-2">{p.role || "Puesto sin especificar"}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {change.isSuccess && !changing && <span className="text-xs text-good">Estado actualizado ✓</span>}
           <StatusBadge status={p.status} />
           <button className="btn" onClick={() => setChanging((v) => !v)} aria-expanded={changing}>
             Cambiar estado
@@ -649,10 +650,10 @@ function Data({ p }: { p: PD }) {
           <input type="date" className="input" value={d.appliedAt} onChange={(e) => set("appliedAt", e.target.value)} />
         </Field>
         <Field label="Web de la empresa">
-          <input className="input" type="url" value={d.website} onChange={(e) => set("website", e.target.value)} />
+          <input className="input" inputMode="url" value={d.website} onChange={(e) => set("website", e.target.value)} onBlur={(e) => set("website", normalizeUrl(e.target.value))} />
         </Field>
         <Field label="Link a la oferta">
-          <input className="input" type="url" value={d.jobUrl} onChange={(e) => set("jobUrl", e.target.value)} />
+          <input className="input" inputMode="url" value={d.jobUrl} onChange={(e) => set("jobUrl", e.target.value)} onBlur={(e) => set("jobUrl", normalizeUrl(e.target.value))} />
         </Field>
         <Field label="Etiquetas (separadas por coma)">
           <input className="input" value={d.tags} onChange={(e) => set("tags", e.target.value)} />
