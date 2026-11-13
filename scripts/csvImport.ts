@@ -15,9 +15,10 @@ import {
 import { INTERVIEW_TYPE_LABEL } from "../src/shared/labels";
 
 /**
- * One-off importer for the original spreadsheet:
- *   Empresa, Description, Stage, Status, (extra)
+ * Importer for a "one row per company" tracking spreadsheet:
+ *   Company (or Empresa), Description, Stage (or Timeline), Status, (extra)
  * "Stage" holds a free-text timeline: bullets that usually start with a date (d/m/yy[yy]).
+ * The keyword heuristics below understand notes written in Spanish and English.
  */
 
 // ---------------------------------------------------------------- CSV + encoding
@@ -131,7 +132,7 @@ export function splitTimeline(cell: string): Segment[] {
 type Classified = { kind: EntryKind; interviewType: InterviewType | null; title: string; interviewers: string[] };
 
 const REJECTION = /rechaz|rejection|no va a proceder|respuesta fue negativa|decidio no presentar|no proceder|asumo rejection/;
-const INTERVIEW = /entrevista|llamada|reunion|\breu\b|meeting|screen|workshop|\bcall\b|discusion/;
+const INTERVIEW = /interview|entrevista|llamada|reunion|\breu\b|meeting|screen|workshop|\bcall\b|discusion/;
 
 /** Classify by the first sentence: later sentences often describe *future* steps ("next is a hiring manager…"). */
 export function classify(text: string): Classified {
@@ -148,19 +149,19 @@ export function classify(text: string): Classified {
     kind,
     interviewType,
     interviewers,
-    title: title ?? (interviewType ? INTERVIEW_TYPE_LABEL[interviewType] : kind === "email" ? "Mensaje" : "Nota"),
+    title: title ?? (interviewType ? INTERVIEW_TYPE_LABEL[interviewType] : kind === "email" ? "Message" : "Note"),
   });
 
-  if (REJECTION.test(t) && !/^(entrevista|llamada|reunion|reu)\b/.test(t)) return mk("email", null, "Rechazo");
-  if (/envia url|para agendar|presentado/.test(t) && !/^(entrevista|llamada|reunion|reu|meeting)\b/.test(t)) return mk("email", null, "Mensaje");
+  if (REJECTION.test(t) && !/^(entrevista|llamada|reunion|reu)\b/.test(t)) return mk("email", null, "Rejection");
+  if (/envia url|para agendar|presentado/.test(t) && !/^(entrevista|llamada|reunion|reu|meeting)\b/.test(t)) return mk("email", null, "Message");
   if (/online assessment/.test(t)) return mk("assessment", "online_assessment");
   if (/take[- ]?(away|home)|assignment/.test(t)) {
     if (/discusion|discusión/.test(t)) return mk("interview", "take_home_review");
-    if (/^entrevista/.test(t)) return mk("interview", /founder|ceo|cto/.test(t) ? "founder" : "technical_discussion", "Entrevista + take-home");
+    if (/^entrevista/.test(t)) return mk("interview", /founder|ceo|cto/.test(t) ? "founder" : "technical_discussion", "Interview + take-home");
     return mk("assessment", "take_home");
   }
   if (INTERVIEW.test(t)) {
-    // The keyword mentioned first wins ("con el recruiter … agendar las técnicas" is a recruiter screen).
+    // The keyword mentioned first wins ("with the recruiter … schedule the technical rounds" is a recruiter screen).
     const rules: [RegExp, InterviewType][] = [
       [/behaviou?ral/, "behavioral"],
       [/hiring manager/, "hiring_manager"],
@@ -176,11 +177,11 @@ export function classify(text: string): Classified {
       .map(([re, type]) => ({ type, at: t.search(re) }))
       .filter((r) => r.at >= 0)
       .sort((a, b) => a.at - b.at)[0];
-    return hit ? mk("interview", hit.type) : mk("interview", "other", "Entrevista");
+    return hit ? mk("interview", hit.type) : mk("interview", "other", "Interview");
   }
-  if (/oferta|offer/.test(t)) return mk("offer", null, "Oferta");
-  if (/presentado|agendar|escribe|email|url/.test(t)) return mk("email", null, "Mensaje");
-  return mk("note", null, "Nota");
+  if (/oferta|offer/.test(t)) return mk("offer", null, "Offer");
+  if (/presentado|agendar|escribe|email|url/.test(t)) return mk("email", null, "Message");
+  return mk("note", null, "Note");
 }
 
 const STAGE_OF: Partial<Record<InterviewType, Stage>> = {
@@ -228,7 +229,7 @@ function extractLocation(description: string): { location: string; workMode: Pro
     /onsite en ([A-Za-zÀ-ÿ]+)/i.exec(d)?.[1] ??
     /\b(UK) onsite/i.exec(d)?.[1] ??
     "";
-  const location = loc.trim().replace(/\b\w/g, (c) => c.toUpperCase()).replace(/^Barcelon$/, "Barcelona");
+  const location = loc.trim().replace(/\b\w/g, (c) => c.toUpperCase());
   const n = norm(d);
   const workMode = /100% onsite|onsite|in-office|5 days a week|presencial/.test(n) ? "onsite" : "unknown";
   return { location, workMode };
@@ -256,8 +257,9 @@ export function csvToExport(text: string, nowIso = new Date().toISOString()): { 
   const rows = parseCsv(text);
   const header = rows.shift()?.map((h) => norm(h.trim())) ?? [];
   const col = (name: string) => header.indexOf(name);
-  const [iName, iDesc, iStage, iStatus] = [col("empresa"), col("description"), col("stage"), col("status")];
-  if (iName < 0) throw new Error("El CSV no tiene columna 'Empresa'");
+  const pick = (...names: string[]) => names.map(col).find((i) => i >= 0) ?? -1;
+  const [iName, iDesc, iStage, iStatus] = [pick("company", "empresa"), pick("description", "notes", "descripcion"), pick("stage", "timeline"), pick("status", "estado")];
+  if (iName < 0) throw new Error("The CSV has no 'Company' (or 'Empresa') column");
 
   const companies = new Map<string, Company>();
   const processes: Process[] = [];
@@ -288,7 +290,7 @@ export function csvToExport(text: string, nowIso = new Date().toISOString()): { 
     let stage: Stage = "none";
     const myEntries: Entry[] = segs.map((s) => {
       const c = classify(s.text);
-      if (s.date && prev && s.date < prev) warnings.push(`${name}: fecha ${s.date} anterior a la entrada previa (${prev}); ¿error de mes en el Excel?`);
+      if (s.date && prev && s.date < prev) warnings.push(`${name}: date ${s.date} is earlier than the previous entry (${prev}); month typo in the spreadsheet?`);
       if (s.date) prev = s.date;
       const st = c.interviewType ? STAGE_OF[c.interviewType] : c.kind === "offer" ? "offer" : undefined;
       if (st && STAGE_ORDER.indexOf(st) > STAGE_ORDER.indexOf(stage)) stage = st;
@@ -316,13 +318,13 @@ export function csvToExport(text: string, nowIso = new Date().toISOString()): { 
     entries.push(...myEntries);
 
     const dated = myEntries.map((e) => e.date).filter((d): d is string => !!d);
-    const first = dated[0] ?? null; // list order: robust to typos like Maximor's 12/06
+    const first = dated[0] ?? null; // list order: robust to day/month typos in the sheet
     const last = dated.length ? [...dated].sort().at(-1)! : null;
     const { location, workMode } = extractLocation(description);
     const salary = extractSalary(`${description}\n${stageCell}`);
     const firstInterview = myEntries.find((e) => (e.kind === "interview" || e.kind === "assessment") && e.date);
 
-    const notes = [uncertain ? "Marcada con '?' en el Excel original." : "", extra ? `Nota extra del Excel: ${extra}` : ""].filter(Boolean).join("\n");
+    const notes = [uncertain ? "Marked with '?' in the original spreadsheet." : "", extra ? `Extra note from the spreadsheet: ${extra}` : ""].filter(Boolean).join("\n");
     const p: Process = {
       id: pid,
       companyId: company.id,
@@ -355,10 +357,10 @@ export function csvToExport(text: string, nowIso = new Date().toISOString()): { 
       return to;
     };
     if (status === "wishlist") {
-      sc(null, "wishlist", nowIso.slice(0, 10), "Importado del Excel");
+      sc(null, "wishlist", nowIso.slice(0, 10), "Imported from spreadsheet");
       continue;
     }
-    let cur = sc(null, "applied", first, "Importado del Excel");
+    let cur = sc(null, "applied", first, "Imported from spreadsheet");
     if (firstInterview) cur = sc(cur, "ongoing", firstInterview.date);
     if (status === "offer") {
       const offerEntry = [...myEntries].reverse().find((e) => /oferta|offer/i.test(e.rawNotes));

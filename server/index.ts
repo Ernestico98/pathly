@@ -28,9 +28,9 @@ const server = serve({ fetch: root.fetch, port: PORT, hostname: "127.0.0.1" }, (
 server.on("error", (err: NodeJS.ErrnoException) => {
   if (err.code === "EADDRINUSE") {
     console.error(
-      `\n✗ El puerto ${PORT} ya está en uso (¿otra instancia de Pathly?).\n` +
-        `  Ver quién lo usa:  lsof -nP -iTCP:${PORT} -sTCP:LISTEN\n` +
-        `  O usa otro:        PORT=8790 pnpm dev   (la web se ajusta sola)\n`,
+      `\n✗ Port ${PORT} is already in use (another Pathly instance?).\n` +
+        `  See who's using it:  lsof -nP -iTCP:${PORT} -sTCP:LISTEN\n` +
+        `  Or pick another:     PORT=8790 pnpm dev   (the web app follows)\n`,
     );
     process.exit(1);
   }

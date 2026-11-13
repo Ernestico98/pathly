@@ -86,7 +86,7 @@ export default function NewProcess() {
     },
     onSuccess: (p) => {
       qc.invalidateQueries();
-      nav(`/procesos/${p.id}`);
+      nav(`/processes/${p.id}`);
     },
   });
 
@@ -98,71 +98,71 @@ export default function NewProcess() {
         if (name.trim()) save.mutate();
       }}
     >
-      <h1 className="text-xl font-semibold tracking-tight">Nuevo proceso</h1>
+      <h1 className="text-xl font-semibold tracking-tight">New process</h1>
 
       <section className="card space-y-4 p-5">
-        <h2 className="text-sm font-semibold">Empresa</h2>
+        <h2 className="text-sm font-semibold">Company</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Nombre *" hint={existing ? "Ya existe: se reutiliza su ficha y se añade un proceso nuevo." : undefined}>
+          <Field label="Name *" hint={existing ? "Already exists: its brief is reused and a new process is added." : undefined}>
             <input className="input" required value={name} onChange={(e) => setName(e.target.value)} list="companies" autoFocus />
             <datalist id="companies">
               {companies.data?.map((c) => <option key={c.id} value={c.name} />)}
             </datalist>
           </Field>
-          <Field label="Web">
+          <Field label="Website">
             <input className="input" inputMode="url" placeholder="acme.com" value={website} onChange={(e) => setWebsite(e.target.value)} onBlur={(e) => setWebsite(normalizeUrl(e.target.value))} />
           </Field>
         </div>
-        <Field label="Lo que ya sabes (opcional)" hint="Se usa como contexto para la ficha.">
-          <textarea className="input" rows={2} value={companyNotes} onChange={(e) => setCompanyNotes(e.target.value)} placeholder="p. ej. me contactó un recruiter, serie A, 30 personas…" />
+        <Field label="What you already know (optional)" hint="Used as context for the brief.">
+          <textarea className="input" rows={2} value={companyNotes} onChange={(e) => setCompanyNotes(e.target.value)} placeholder="e.g. a recruiter reached out, Series A, 30 people…" />
         </Field>
         <div className="flex flex-wrap items-center gap-3">
           <button type="button" className="btn" disabled={!name.trim() || brief.isPending} onClick={() => brief.mutate()}>
-            ✦ {companySummary ? "Regenerar" : "Generar"} ficha de la empresa
+            ✦ {companySummary ? "Regenerate" : "Generate"} company brief
           </button>
-          {brief.isPending && <Spinner label="Investigando la empresa…" />}
-          {existing?.summary && !companySummary && <span className="text-xs text-text-3">Esta empresa ya tiene ficha.</span>}
+          {brief.isPending && <Spinner label="Researching the company…" />}
+          {existing?.summary && !companySummary && <span className="text-xs text-text-3">This company already has a brief.</span>}
         </div>
         <ErrorBox error={brief.error} />
         {briefWarning && <p className="text-xs text-warn">{briefWarning}</p>}
         {(companySummary || brief.isSuccess) && (
-          <MarkdownEditor label="Ficha de la empresa" value={companySummary} onChange={setCompanySummary} rows={12} />
+          <MarkdownEditor label="Company brief" value={companySummary} onChange={setCompanySummary} rows={12} />
         )}
       </section>
 
       <section className="card space-y-4 p-5">
-        <h2 className="text-sm font-semibold">Puesto</h2>
+        <h2 className="text-sm font-semibold">Role</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Puesto">
-            <input className="input" value={role} onChange={(e) => setRole(e.target.value)} placeholder="p. ej. Senior AI Engineer" />
+          <Field label="Role">
+            <input className="input" value={role} onChange={(e) => setRole(e.target.value)} placeholder="e.g. Senior AI Engineer" />
           </Field>
-          <Field label="Link a la oferta">
+          <Field label="Job posting link">
             <input className="input" inputMode="url" value={jobUrl} onChange={(e) => setJobUrl(e.target.value)} onBlur={(e) => setJobUrl(normalizeUrl(e.target.value))} placeholder="https://…" />
           </Field>
         </div>
         {showPaste ? (
-          <Field label="Descripción del puesto" hint="Si la web de la oferta requiere login (LinkedIn…), pega aquí el texto.">
+          <Field label="Job description" hint="If the job posting requires login (LinkedIn…), paste the text here.">
             <textarea className="input" rows={6} value={jobText} onChange={(e) => setJobText(e.target.value)} />
           </Field>
         ) : (
           <button type="button" className="text-sm text-accent hover:underline" onClick={() => setShowPaste(true)}>
-            Pegar la descripción en lugar de usar el link
+            Paste the description instead of using the link
           </button>
         )}
         <div className="flex flex-wrap items-center gap-3">
           <button type="button" className="btn" disabled={(!jobUrl && !jobText.trim()) || job.isPending} onClick={() => job.mutate()}>
-            ✦ Resumir puesto
+            ✦ Summarise role
           </button>
-          {job.isPending && <Spinner label="Leyendo la oferta…" />}
+          {job.isPending && <Spinner label="Reading the job posting…" />}
         </div>
         <ErrorBox error={job.error} />
-        {(jobSummary || job.isSuccess) && <MarkdownEditor label="Resumen del puesto" value={jobSummary} onChange={setJobSummary} rows={10} />}
+        {(jobSummary || job.isSuccess) && <MarkdownEditor label="Role summary" value={jobSummary} onChange={setJobSummary} rows={10} />}
       </section>
 
       <section className="card space-y-4 p-5">
-        <h2 className="text-sm font-semibold">Detalles</h2>
+        <h2 className="text-sm font-semibold">Details</h2>
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Estado inicial">
+          <Field label="Initial status">
             <select className="input" value={status} onChange={(e) => setStatus(e.target.value as ProcessStatus)}>
               {INITIAL_STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -172,11 +172,11 @@ export default function NewProcess() {
             </select>
           </Field>
           {status !== "wishlist" && (
-            <Field label="Fecha de aplicación">
+            <Field label="Application date">
               <input className="input" type="date" value={appliedAt} onChange={(e) => setAppliedAt(e.target.value)} />
             </Field>
           )}
-          <Field label="Fuente">
+          <Field label="Source">
             <select className="input" value={source} onChange={(e) => setSource(e.target.value as typeof source)}>
               {SOURCES.map((s) => (
                 <option key={s} value={s}>
@@ -185,10 +185,10 @@ export default function NewProcess() {
               ))}
             </select>
           </Field>
-          <Field label="Ubicación">
+          <Field label="Location">
             <input className="input" value={location} onChange={(e) => setLocation(e.target.value)} />
           </Field>
-          <Field label="Modalidad">
+          <Field label="Work mode">
             <select className="input" value={workMode} onChange={(e) => setWorkMode(e.target.value as typeof workMode)}>
               {WORK_MODES.map((s) => (
                 <option key={s} value={s}>
@@ -198,13 +198,13 @@ export default function NewProcess() {
             </select>
           </Field>
           <div className="grid grid-cols-[1fr_1fr_5rem] gap-2 sm:col-span-3">
-            <Field label="Salario mín.">
+            <Field label="Min. salary">
               <input className="input" inputMode="numeric" value={salaryMin} onChange={(e) => setSalaryMin(e.target.value.replace(/\D/g, ""))} placeholder="60000" />
             </Field>
-            <Field label="Salario máx.">
+            <Field label="Max. salary">
               <input className="input" inputMode="numeric" value={salaryMax} onChange={(e) => setSalaryMax(e.target.value.replace(/\D/g, ""))} placeholder="75000" />
             </Field>
-            <Field label="Moneda">
+            <Field label="Currency">
               <input className="input" value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase().slice(0, 3))} />
             </Field>
           </div>
@@ -214,10 +214,10 @@ export default function NewProcess() {
       <ErrorBox error={save.error} />
       <div className="flex justify-end gap-2">
         <button type="button" className="btn" onClick={() => nav(-1)}>
-          Cancelar
+          Cancel
         </button>
         <button type="submit" className="btn btn-primary" disabled={!name.trim() || save.isPending}>
-          {save.isPending ? "Guardando…" : "Crear proceso"}
+          {save.isPending ? "Saving…" : "Create process"}
         </button>
       </div>
     </form>

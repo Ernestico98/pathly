@@ -110,18 +110,18 @@ export function MarkdownEditor({
     <div>
       <div className="mb-1 flex items-center justify-between">
         <span className="label mb-0">{label}</span>
-        <div className="flex gap-1 text-xs" role="group" aria-label={`${label}: modo`}>
+        <div className="flex gap-1 text-xs" role="group" aria-label={`${label}: mode`}>
           <button type="button" className={`rounded px-2 py-0.5 ${!preview ? "bg-surface-2 font-medium" : "text-text-2"}`} onClick={() => setPreview(false)} aria-pressed={!preview}>
-            Editar
+            Edit
           </button>
           <button type="button" className={`rounded px-2 py-0.5 ${preview ? "bg-surface-2 font-medium" : "text-text-2"}`} onClick={() => setPreview(true)} aria-pressed={preview}>
-            Vista previa
+            Preview
           </button>
         </div>
       </div>
       {preview ? (
         <div className="min-h-16 rounded-lg border border-border bg-surface px-3 py-2" onDoubleClick={() => setPreview(false)}>
-          {value ? <Md>{value}</Md> : <span className="text-sm text-text-3">{placeholder ?? "Vacío"}</span>}
+          {value ? <Md>{value}</Md> : <span className="text-sm text-text-3">{placeholder ?? "Empty"}</span>}
         </div>
       ) : (
         <textarea className="input font-mono text-[13px]" rows={rows} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} aria-label={label} />
@@ -156,8 +156,8 @@ export const normalizeUrl = (v: string) => {
 };
 
 export const fmtDate = (d: string | null | undefined, approx = false) => {
-  if (!d) return "Sin fecha";
-  const s = new Date(`${d}T00:00:00`).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+  if (!d) return "No date";
+  const s = new Date(`${d}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   return approx ? `≈ ${s}` : s;
 };
 
@@ -166,9 +166,9 @@ export const daysSince = (d: string | null | undefined) => (d ? Math.floor((Date
 export function relDays(d: string | null | undefined) {
   const n = daysSince(d);
   if (n === null) return "—";
-  if (n <= 0) return "hoy";
-  if (n === 1) return "ayer";
-  return `hace ${n} d`;
+  if (n <= 0) return "today";
+  if (n === 1) return "yesterday";
+  return `${n} d ago`;
 }
 
 export const todayIso = () => {

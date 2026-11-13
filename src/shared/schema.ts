@@ -211,7 +211,7 @@ export const LlmSettings = z.object({
   ollamaUrl: z.string().default("http://localhost:11434"),
   ollamaModel: z.string().default("gemma4"),
   /** Language for generated text. "auto" = same as the input. */
-  language: z.enum(["auto", "es", "en"]).default("es"),
+  language: z.enum(["auto", "es", "en"]).default("auto"),
 });
 export type LlmSettings = z.infer<typeof LlmSettings>;
 

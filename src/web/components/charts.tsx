@@ -120,7 +120,7 @@ export function Columns({ data, caption, valueLabel }: { data: { x: string; labe
               className="pointer-events-none absolute -top-2 z-10 -translate-x-1/2 -translate-y-full rounded-md border border-border bg-surface px-2 py-1 text-xs shadow-md"
               style={{ left: `${((hover + 0.5) / data.length) * 100}%` }}
             >
-              <div className="text-text-2">Semana del {data[hover].label}</div>
+              <div className="text-text-2">Week of {data[hover].label}</div>
               <div className="font-medium tabular-nums">
                 {data[hover].value} {valueLabel}
               </div>

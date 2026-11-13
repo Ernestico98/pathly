@@ -28,12 +28,12 @@ export function computeAnalytics(repo: Repo, today = new Date().toISOString().sl
   const everReached = (pid: string, s: ProcessStatus) => changes.some((c) => c.processId === pid && c.to === s);
   const applied = processes.filter((p) => p.status !== "wishlist");
   const funnel = [
-    { key: "applied", label: "Aplicados", value: applied.length },
-    { key: "interview", label: "Con alguna entrevista", value: applied.filter((p) => (interviewsByProcess.get(p.id) ?? 0) >= 1).length },
-    { key: "second", label: "2+ entrevistas", value: applied.filter((p) => (interviewsByProcess.get(p.id) ?? 0) >= 2).length },
-    { key: "third", label: "3+ entrevistas", value: applied.filter((p) => (interviewsByProcess.get(p.id) ?? 0) >= 3).length },
-    { key: "offer", label: "Oferta", value: applied.filter((p) => ["offer", "accepted", "declined"].includes(p.status) || everReached(p.id, "offer")).length },
-    { key: "accepted", label: "Aceptada", value: applied.filter((p) => p.status === "accepted").length },
+    { key: "applied", label: "Applied", value: applied.length },
+    { key: "interview", label: "Had an interview", value: applied.filter((p) => (interviewsByProcess.get(p.id) ?? 0) >= 1).length },
+    { key: "second", label: "2+ interviews", value: applied.filter((p) => (interviewsByProcess.get(p.id) ?? 0) >= 2).length },
+    { key: "third", label: "3+ interviews", value: applied.filter((p) => (interviewsByProcess.get(p.id) ?? 0) >= 3).length },
+    { key: "offer", label: "Offer", value: applied.filter((p) => ["offer", "accepted", "declined"].includes(p.status) || everReached(p.id, "offer")).length },
+    { key: "accepted", label: "Accepted", value: applied.filter((p) => p.status === "accepted").length },
   ];
 
   // Interviews per ISO week, last 16 weeks, zero-filled.
@@ -57,10 +57,10 @@ export function computeAnalytics(repo: Repo, today = new Date().toISOString().sl
   const rejectedAt = new Map<string, number>();
   for (const p of processes.filter((p) => p.status === "rejected")) {
     const n = interviewsByProcess.get(p.id) ?? 0;
-    const bucket = n === 0 ? "Sin entrevistas" : n === 1 ? "Tras 1 entrevista" : n === 2 ? "Tras 2" : "Tras 3 o más";
+    const bucket = n === 0 ? "No interviews" : n === 1 ? "After 1 interview" : n === 2 ? "After 2" : "After 3+";
     rejectedAt.set(bucket, (rejectedAt.get(bucket) ?? 0) + 1);
   }
-  const rejectionBuckets = ["Sin entrevistas", "Tras 1 entrevista", "Tras 2", "Tras 3 o más"].map((label) => ({ label, value: rejectedAt.get(label) ?? 0 }));
+  const rejectionBuckets = ["No interviews", "After 1 interview", "After 2", "After 3+"].map((label) => ({ label, value: rejectedAt.get(label) ?? 0 }));
 
   // Durations of closed processes (first dated entry/applied → closed).
   const durations = processes

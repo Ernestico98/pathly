@@ -25,28 +25,28 @@ import {
 import { api } from "../api";
 import { Empty, ErrorBox, Field, ListInput, MarkdownEditor, Md, Spinner, StatusBadge, fmtDate, normalizeUrl, relDays, todayIso } from "../components/ui";
 
-type Tab = "cronologia" | "preparacion" | "datos";
+type Tab = "timeline" | "prep" | "details";
 
 export default function ProcessDetail() {
   const { id = "" } = useParams();
   const q = useQuery({ queryKey: ["process", id], queryFn: () => api.process(id) });
   const [params, setParams] = useSearchParams();
-  const tab = (params.get("tab") as Tab) || "cronologia";
+  const tab = (params.get("tab") as Tab) || "timeline";
 
-  if (q.isPending) return <Spinner label="Cargando…" />;
+  if (q.isPending) return <Spinner label="Loading…" />;
   if (q.error) return <ErrorBox error={q.error} />;
   const p = q.data;
 
   const TABS: { key: Tab; label: string }[] = [
-    { key: "cronologia", label: `Cronología (${p.entries.length})` },
-    { key: "preparacion", label: "Preparación" },
-    { key: "datos", label: "Datos" },
+    { key: "timeline", label: `Timeline (${p.entries.length})` },
+    { key: "prep", label: "Prep" },
+    { key: "details", label: "Details" },
   ];
 
   return (
     <div className="space-y-5">
-      <Link to="/procesos" className="text-sm text-text-2 hover:text-text">
-        ← Procesos
+      <Link to="/processes" className="text-sm text-text-2 hover:text-text">
+        ← Processes
       </Link>
       <Header p={p} />
       <div className="flex gap-1 border-b border-border" role="tablist">
@@ -55,16 +55,16 @@ export default function ProcessDetail() {
             key={t.key}
             role="tab"
             aria-selected={tab === t.key}
-            onClick={() => setParams(t.key === "cronologia" ? {} : { tab: t.key }, { replace: true })}
+            onClick={() => setParams(t.key === "timeline" ? {} : { tab: t.key }, { replace: true })}
             className={`-mb-px border-b-2 px-3 py-2 text-sm ${tab === t.key ? "border-accent font-medium text-text" : "border-transparent text-text-2 hover:text-text"}`}
           >
             {t.label}
           </button>
         ))}
       </div>
-      {tab === "cronologia" && <Timeline p={p} />}
-      {tab === "preparacion" && <Prep p={p} />}
-      {tab === "datos" && <Data p={p} />}
+      {tab === "timeline" && <Timeline p={p} />}
+      {tab === "prep" && <Prep p={p} />}
+      {tab === "details" && <Data p={p} />}
     </div>
   );
 }
@@ -100,23 +100,23 @@ function Header({ p }: { p: PD }) {
             <StatusBadge status={p.status} />
             {change.isSuccess && !changing && (
               <span className="text-xs text-good" role="status">
-                Estado actualizado ✓
+                Status updated ✓
               </span>
             )}
           </div>
-          <p className="text-text-2">{p.role || "Puesto sin especificar"}</p>
+          <p className="text-text-2">{p.role || "No role specified"}</p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           <button className="btn" onClick={() => setChanging((v) => !v)} aria-expanded={changing}>
-            Cambiar estado
+            Change status
           </button>
-          <Link to={`/procesos/${p.id}/entrada`} className="btn btn-primary">
-            + Nueva entrada
+          <Link to={`/processes/${p.id}/entry`} className="btn btn-primary">
+            + New entry
           </Link>
         </div>
       </div>
       <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-text-2">
-        <span>Fase: {STAGE_LABEL[p.stage]}</span>
+        <span>Stage: {STAGE_LABEL[p.stage]}</span>
         {p.location && <span>📍 {p.location}</span>}
         {p.workMode !== "unknown" && <span>{WORK_MODE_LABEL[p.workMode]}</span>}
         {(p.salaryMin || p.salaryMax) && (
@@ -124,16 +124,16 @@ function Header({ p }: { p: PD }) {
             💰 {[p.salaryMin, p.salaryMax].filter(Boolean).map((n) => `${Math.round(n! / 1000)}k`).join("–")} {p.currency}
           </span>
         )}
-        {p.appliedAt && <span>Aplicado: {fmtDate(p.appliedAt)}</span>}
-        <span>Última actividad: {relDays(p.lastEntryDate)}</span>
+        {p.appliedAt && <span>Applied: {fmtDate(p.appliedAt)}</span>}
+        <span>Last activity: {relDays(p.lastEntryDate)}</span>
         {p.jobUrl && (
           <a href={p.jobUrl} target="_blank" rel="noreferrer" className="text-accent hover:underline">
-            Oferta ↗
+            Job posting ↗
           </a>
         )}
         {p.company.website && (
           <a href={p.company.website} target="_blank" rel="noreferrer" className="text-accent hover:underline">
-            Web ↗
+            Website ↗
           </a>
         )}
       </div>
@@ -146,7 +146,7 @@ function Header({ p }: { p: PD }) {
             change.mutate();
           }}
         >
-          <Field label="Nuevo estado">
+          <Field label="New status">
             <select className="input" value={to} onChange={(e) => setTo(e.target.value as ProcessStatus)}>
               {PROCESS_STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -155,14 +155,14 @@ function Header({ p }: { p: PD }) {
               ))}
             </select>
           </Field>
-          <Field label="Fecha">
+          <Field label="Date">
             <input type="date" className="input" value={at} onChange={(e) => setAt(e.target.value)} />
           </Field>
-          <Field label="Motivo (opcional)">
+          <Field label="Reason (optional)">
             <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} />
           </Field>
           <button className="btn btn-primary" disabled={to === p.status || change.isPending}>
-            Guardar
+            Save
           </button>
           {/* Help lives on its own row so it doesn't push the first field out of line. */}
           <p id="status-help" className="-mt-1 text-xs text-text-3 sm:col-span-4">
@@ -199,9 +199,9 @@ function Timeline({ p }: { p: PD }) {
       <div className="order-2 lg:order-1">
         {items.length === 0 ? (
           <Empty>
-            Aún no hay entradas.{" "}
-            <Link to={`/procesos/${p.id}/entrada`} className="text-accent hover:underline">
-              Añade la primera
+            No entries yet.{" "}
+            <Link to={`/processes/${p.id}/entry`} className="text-accent hover:underline">
+              Add the first one
             </Link>
           </Empty>
         ) : (
@@ -212,7 +212,7 @@ function Timeline({ p }: { p: PD }) {
               ) : (
                 <li key={it.s.id} className="relative text-xs text-text-2">
                   <span className="absolute top-1 -left-[25px] h-2 w-2 rounded-full border border-surface bg-text-3" aria-hidden />
-                  {fmtDate(it.s.at)} · Estado: {it.s.from && STATUS_LABEL[it.s.from]} → <strong className="font-medium text-text">{STATUS_LABEL[it.s.to]}</strong>
+                  {fmtDate(it.s.at)} · Status: {it.s.from && STATUS_LABEL[it.s.from]} → <strong className="font-medium text-text">{STATUS_LABEL[it.s.to]}</strong>
                   {it.s.reason && <span className="text-text-3"> — {it.s.reason}</span>}
                 </li>
               ),
@@ -248,10 +248,10 @@ function ProcessSummary({ p }: { p: PD }) {
   return (
     <div className="card p-4 lg:sticky lg:top-20">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold">Estado del proceso</h2>
+        <h2 className="text-sm font-semibold">Process status</h2>
         <div className="flex gap-1">
-          <button className="btn btn-ghost px-2 py-1 text-xs" onClick={() => regen.mutate()} disabled={regen.isPending || p.entries.length === 0} title="Regenerar con IA">
-            ✦ {regen.isPending ? "…" : "IA"}
+          <button className="btn btn-ghost px-2 py-1 text-xs" onClick={() => regen.mutate()} disabled={regen.isPending || p.entries.length === 0} title="Regenerate with AI">
+            ✦ {regen.isPending ? "…" : "AI"}
           </button>
           {!editing && (
             <button
@@ -261,7 +261,7 @@ function ProcessSummary({ p }: { p: PD }) {
                 setEditing(true);
               }}
             >
-              Editar
+              Edit
             </button>
           )}
         </div>
@@ -269,20 +269,20 @@ function ProcessSummary({ p }: { p: PD }) {
       <ErrorBox error={regen.error} />
       {editing ? (
         <div className="space-y-2">
-          <MarkdownEditor label="Resumen" value={text} onChange={setText} rows={10} />
+          <MarkdownEditor label="Summary" value={text} onChange={setText} rows={10} />
           <div className="flex justify-end gap-2">
             <button className="btn" onClick={() => setEditing(false)}>
-              Cancelar
+              Cancel
             </button>
             <button className="btn btn-primary" onClick={() => save.mutate(text)} disabled={save.isPending}>
-              Guardar
+              Save
             </button>
           </div>
         </div>
       ) : p.summary ? (
         <Md>{p.summary}</Md>
       ) : (
-        <p className="text-sm text-text-3">Sin resumen todavía. Se genera al añadir una entrada con IA, o pulsa ✦ IA.</p>
+        <p className="text-sm text-text-3">No summary yet. It is generated when you add an entry with AI, or click ✦ AI.</p>
       )}
     </div>
   );
@@ -304,7 +304,7 @@ function EntryCard({ e }: { e: Entry }) {
           <>
             <header className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
               <h3 className="font-medium">{e.title || ENTRY_KIND_LABEL[e.kind]}</h3>
-              <span className="text-xs tabular-nums text-text-3" title={e.dateIsApprox ? "Fecha aproximada" : undefined}>
+              <span className="text-xs tabular-nums text-text-3" title={e.dateIsApprox ? "Approximate date" : undefined}>
                 {fmtDate(e.date, e.dateIsApprox)}
               </span>
             </header>
@@ -317,7 +317,7 @@ function EntryCard({ e }: { e: Entry }) {
                 </span>
               ))}
               {e.selfAssessment && (
-                <span className="rounded bg-surface-2 px-1.5 py-0.5 text-text-2" title="Cómo crees que fue">
+                <span className="rounded bg-surface-2 px-1.5 py-0.5 text-text-2" title="How you think it went">
                   {"★".repeat(e.selfAssessment)}
                   <span className="opacity-30">{"★".repeat(5 - e.selfAssessment)}</span>
                 </span>
@@ -328,20 +328,20 @@ function EntryCard({ e }: { e: Entry }) {
             <footer className="mt-3 flex flex-wrap items-center gap-3 border-t border-border pt-2 text-xs">
               {e.rawNotes && e.rawNotes.trim() !== e.summary.trim() && (
                 <button className="text-text-2 hover:text-text" onClick={() => setShowRaw((v) => !v)} aria-expanded={showRaw}>
-                  {showRaw ? "Ocultar" : "Ver"} notas originales
+                  {showRaw ? "Hide" : "View"} original notes
                 </button>
               )}
               <span className="flex-1" />
               <button className="text-text-2 hover:text-text" onClick={() => setEditing(true)}>
-                Editar
+                Edit
               </button>
               <button
                 className="text-danger hover:underline"
                 onClick={() => {
-                  if (window.confirm("¿Borrar esta entrada?")) del.mutate();
+                  if (window.confirm("Delete this entry?")) del.mutate();
                 }}
               >
-                Borrar
+                Delete
               </button>
             </footer>
             {showRaw && <pre className="mt-2 whitespace-pre-wrap rounded-lg bg-surface-2 p-3 font-sans text-xs text-text-2">{e.rawNotes}</pre>}
@@ -354,9 +354,9 @@ function EntryCard({ e }: { e: Entry }) {
 
 function Lists({ e }: { e: Pick<Entry, "topics" | "decisions" | "nextSteps"> }) {
   const blocks = [
-    { title: "Temas", items: e.topics },
-    { title: "Decisiones", items: e.decisions },
-    { title: "Siguientes pasos", items: e.nextSteps },
+    { title: "Topics", items: e.topics },
+    { title: "Decisions", items: e.decisions },
+    { title: "Next steps", items: e.nextSteps },
   ].filter((b) => b.items.length);
   if (!blocks.length) return null;
   return (
@@ -395,13 +395,13 @@ export function EntryEditor({ e, onDone }: { e: Entry; onDone: () => void }) {
       }}
     >
       <div className="grid gap-3 sm:grid-cols-4">
-        <Field label="Título">
+        <Field label="Title">
           <input className="input" value={d.title} onChange={(ev) => set("title", ev.target.value)} />
         </Field>
-        <Field label="Fecha">
+        <Field label="Date">
           <input type="date" className="input" value={d.date ?? ""} onChange={(ev) => setD((x) => ({ ...x, date: ev.target.value || null, dateIsApprox: false }))} />
         </Field>
-        <Field label="Tipo">
+        <Field label="Type">
           <select className="input" value={d.kind} onChange={(ev) => set("kind", ev.target.value as Entry["kind"])}>
             {ENTRY_KINDS.map((k) => (
               <option key={k} value={k}>
@@ -410,7 +410,7 @@ export function EntryEditor({ e, onDone }: { e: Entry; onDone: () => void }) {
             ))}
           </select>
         </Field>
-        <Field label="Tipo de entrevista">
+        <Field label="Interview type">
           <select className="input" value={d.interviewType ?? ""} onChange={(ev) => set("interviewType", (ev.target.value || null) as Entry["interviewType"])}>
             <option value="">—</option>
             {INTERVIEW_TYPES.map((k) => (
@@ -421,28 +421,28 @@ export function EntryEditor({ e, onDone }: { e: Entry; onDone: () => void }) {
           </select>
         </Field>
       </div>
-      <MarkdownEditor label="Resumen" value={d.summary} onChange={(v) => set("summary", v)} rows={6} />
+      <MarkdownEditor label="Summary" value={d.summary} onChange={(v) => set("summary", v)} rows={6} />
       <div className="grid gap-3 sm:grid-cols-3">
-        <Field label="Temas (uno por línea)">
+        <Field label="Topics (one per line)">
           <ListInput value={d.topics} onChange={(v) => set("topics", v)} />
         </Field>
-        <Field label="Decisiones">
+        <Field label="Decisions">
           <ListInput value={d.decisions} onChange={(v) => set("decisions", v)} />
         </Field>
-        <Field label="Siguientes pasos">
+        <Field label="Next steps">
           <ListInput value={d.nextSteps} onChange={(v) => set("nextSteps", v)} />
         </Field>
       </div>
-      <Field label="Entrevistadores (uno por línea)">
+      <Field label="Interviewers (one per line)">
         <ListInput value={d.interviewers} onChange={(v) => set("interviewers", v)} rows={2} />
       </Field>
       <ErrorBox error={save.error} />
       <div className="flex justify-end gap-2">
         <button type="button" className="btn" onClick={onDone}>
-          Cancelar
+          Cancel
         </button>
         <button className="btn btn-primary" disabled={save.isPending}>
-          Guardar
+          Save
         </button>
       </div>
     </form>
@@ -484,7 +484,7 @@ function Prep({ p }: { p: PD }) {
         <div className="grid gap-4 sm:grid-cols-3">
           {nextSteps.length > 0 && (
             <div className="card p-4">
-              <div className="text-xs font-medium text-text-2">Siguientes pasos</div>
+              <div className="text-xs font-medium text-text-2">Next steps</div>
               <ul className="mt-1 list-disc pl-4 text-sm">
                 {nextSteps.map((s) => (
                   <li key={s}>{s}</li>
@@ -494,13 +494,13 @@ function Prep({ p }: { p: PD }) {
           )}
           {people.length > 0 && (
             <div className="card p-4">
-              <div className="text-xs font-medium text-text-2">Personas con las que has hablado</div>
+              <div className="text-xs font-medium text-text-2">People you have talked to</div>
               <p className="mt-1 text-sm">{people.join(", ")}</p>
             </div>
           )}
           {p.compensationNotes && (
             <div className="card p-4">
-              <div className="text-xs font-medium text-text-2">Compensación</div>
+              <div className="text-xs font-medium text-text-2">Compensation</div>
               <p className="mt-1 whitespace-pre-line text-sm">{p.compensationNotes}</p>
             </div>
           )}
@@ -509,50 +509,50 @@ function Prep({ p }: { p: PD }) {
 
       <section className="card space-y-3 p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold">Sobre {p.company.name}</h2>
+          <h2 className="text-sm font-semibold">About {p.company.name}</h2>
           <div className="flex items-center gap-2">
-            {brief.isPending && <Spinner label="Investigando…" />}
+            {brief.isPending && <Spinner label="Researching…" />}
             <button className="btn" onClick={() => brief.mutate()} disabled={brief.isPending}>
-              ✦ {companySummary ? "Regenerar ficha" : "Generar ficha"}
+              ✦ {companySummary ? "Regenerate brief" : "Generate brief"}
             </button>
           </div>
         </div>
         <ErrorBox error={brief.error} />
-        <MarkdownEditor label="Ficha (IA, editable)" value={companySummary} onChange={setCompanySummary} rows={12} placeholder="Sin ficha. Pulsa «Generar ficha»." />
-        <MarkdownEditor label="Mis notas" value={companyNotes} onChange={setCompanyNotes} rows={8} placeholder="Tus notas sobre la empresa" />
+        <MarkdownEditor label="Brief (AI, editable)" value={companySummary} onChange={setCompanySummary} rows={12} placeholder="No brief yet. Click “Generate brief”." />
+        <MarkdownEditor label="My notes" value={companyNotes} onChange={setCompanyNotes} rows={8} placeholder="Your notes about the company" />
       </section>
 
       <section className="card space-y-3 p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold">El puesto</h2>
+          <h2 className="text-sm font-semibold">The role</h2>
           <div className="flex items-center gap-2">
-            {job.isPending && <Spinner label="Leyendo la oferta…" />}
+            {job.isPending && <Spinner label="Reading the job posting…" />}
             <button
               className="btn"
               onClick={() => job.mutate()}
               disabled={job.isPending || (!p.jobUrl && !p.jobDescription)}
-              title={!p.jobUrl && !p.jobDescription ? "Añade el link o la descripción en la pestaña Datos" : undefined}
+              title={!p.jobUrl && !p.jobDescription ? "Add the link or description in the Details tab" : undefined}
             >
-              ✦ {jobSummary ? "Regenerar resumen" : "Resumir puesto"}
+              ✦ {jobSummary ? "Regenerate summary" : "Summarise role"}
             </button>
           </div>
         </div>
         <ErrorBox error={job.error} />
         <MarkdownEditor
-          label="Resumen del puesto"
+          label="Role summary"
           value={jobSummary}
           onChange={setJobSummary}
           rows={10}
-          placeholder={p.jobUrl || p.jobDescription ? "Pulsa «Resumir puesto»." : "Añade el link o la descripción de la oferta en la pestaña Datos."}
+          placeholder={p.jobUrl || p.jobDescription ? "Click “Summarise role”." : "Add the job posting link or description in the Details tab."}
         />
       </section>
 
       {dirty && (
         <div className="sticky bottom-4 flex justify-end">
           <div className="card flex items-center gap-3 px-4 py-2 shadow-lg">
-            <span className="text-sm text-text-2">Cambios sin guardar</span>
+            <span className="text-sm text-text-2">Unsaved changes</span>
             <button className="btn btn-primary" onClick={() => save.mutate()} disabled={save.isPending}>
-              Guardar
+              Save
             </button>
           </div>
         </div>
@@ -611,7 +611,7 @@ function Data({ p }: { p: PD }) {
     mutationFn: () => api.deleteProcess(p.id),
     onSuccess: () => {
       invalidate();
-      nav("/procesos");
+      nav("/processes");
     },
   });
 
@@ -624,13 +624,13 @@ function Data({ p }: { p: PD }) {
       }}
     >
       <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Puesto">
+        <Field label="Role">
           <input className="input" value={d.role} onChange={(e) => set("role", e.target.value)} />
         </Field>
-        <Field label="Ubicación">
+        <Field label="Location">
           <input className="input" value={d.location} onChange={(e) => set("location", e.target.value)} />
         </Field>
-        <Field label="Modalidad">
+        <Field label="Work mode">
           <select className="input" value={d.workMode} onChange={(e) => set("workMode", e.target.value)}>
             {WORK_MODES.map((s) => (
               <option key={s} value={s}>
@@ -639,7 +639,7 @@ function Data({ p }: { p: PD }) {
             ))}
           </select>
         </Field>
-        <Field label="Fuente">
+        <Field label="Source">
           <select className="input" value={d.source} onChange={(e) => set("source", e.target.value)}>
             {SOURCES.map((s) => (
               <option key={s} value={s}>
@@ -648,7 +648,7 @@ function Data({ p }: { p: PD }) {
             ))}
           </select>
         </Field>
-        <Field label="Fase">
+        <Field label="Stage">
           <select className="input" value={d.stage} onChange={(e) => set("stage", e.target.value)}>
             {STAGES.map((s) => (
               <option key={s} value={s}>
@@ -657,37 +657,37 @@ function Data({ p }: { p: PD }) {
             ))}
           </select>
         </Field>
-        <Field label="Fecha de aplicación">
+        <Field label="Application date">
           <input type="date" className="input" value={d.appliedAt} onChange={(e) => set("appliedAt", e.target.value)} />
         </Field>
-        <Field label="Web de la empresa">
+        <Field label="Company website">
           <input className="input" inputMode="url" value={d.website} onChange={(e) => set("website", e.target.value)} onBlur={(e) => set("website", normalizeUrl(e.target.value))} />
         </Field>
-        <Field label="Link a la oferta">
+        <Field label="Job posting link">
           <input className="input" inputMode="url" value={d.jobUrl} onChange={(e) => set("jobUrl", e.target.value)} onBlur={(e) => set("jobUrl", normalizeUrl(e.target.value))} />
         </Field>
-        <Field label="Etiquetas (separadas por coma)">
+        <Field label="Tags (comma-separated)">
           <input className="input" value={d.tags} onChange={(e) => set("tags", e.target.value)} />
         </Field>
         <div className="grid grid-cols-[1fr_1fr_5rem] gap-2 sm:col-span-3">
-          <Field label="Salario mín.">
+          <Field label="Min. salary">
             <input className="input" inputMode="numeric" value={d.salaryMin} onChange={(e) => set("salaryMin", e.target.value.replace(/\D/g, ""))} />
           </Field>
-          <Field label="Salario máx.">
+          <Field label="Max. salary">
             <input className="input" inputMode="numeric" value={d.salaryMax} onChange={(e) => set("salaryMax", e.target.value.replace(/\D/g, ""))} />
           </Field>
-          <Field label="Moneda">
+          <Field label="Currency">
             <input className="input" value={d.currency} onChange={(e) => set("currency", e.target.value.toUpperCase().slice(0, 3))} />
           </Field>
         </div>
       </div>
-      <Field label="Compensación (notas: equity, rangos, lo que dijiste…)">
+      <Field label="Compensation (notes: equity, ranges, what you said…)">
         <textarea className="input" rows={3} value={d.compensationNotes} onChange={(e) => set("compensationNotes", e.target.value)} />
       </Field>
-      <Field label="Descripción del puesto (texto de la oferta)">
+      <Field label="Job description (posting text)">
         <textarea className="input" rows={5} value={d.jobDescription} onChange={(e) => set("jobDescription", e.target.value)} />
       </Field>
-      <Field label="Notas del proceso">
+      <Field label="Process notes">
         <textarea className="input" rows={3} value={d.notes} onChange={(e) => set("notes", e.target.value)} />
       </Field>
       <ErrorBox error={save.error ?? del.error} />
@@ -696,15 +696,15 @@ function Data({ p }: { p: PD }) {
           type="button"
           className="btn btn-danger"
           onClick={() => {
-            if (window.confirm(`¿Borrar el proceso de ${p.company.name} y toda su cronología?`)) del.mutate();
+            if (window.confirm(`Delete the ${p.company.name} process and its whole timeline?`)) del.mutate();
           }}
         >
-          Borrar proceso
+          Delete process
         </button>
         <div className="flex items-center gap-3">
-          {save.isSuccess && <span className="text-sm text-good">Guardado ✓</span>}
+          {save.isSuccess && <span className="text-sm text-good">Saved ✓</span>}
           <button className="btn btn-primary" disabled={save.isPending}>
-            Guardar cambios
+            Save changes
           </button>
         </div>
       </div>

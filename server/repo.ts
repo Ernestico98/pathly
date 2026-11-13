@@ -87,7 +87,7 @@ export class Repo {
     return this.db.tx(() => {
       const { company, companyId, status, ...rest } = input;
       const cid = companyId ?? (company ? this.createCompany(company).id : undefined);
-      if (!cid) throw new Error("companyId o company es obligatorio");
+      if (!cid) throw new Error("companyId or company is required");
       this.getCompany(cid);
       const t = now();
       const p: Process = {

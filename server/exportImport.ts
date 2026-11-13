@@ -23,17 +23,17 @@ const MIGRATIONS: Record<number, (data: any) => any> = {};
 
 export function migrateExport(raw: unknown): ExportFile {
   if (!raw || typeof raw !== "object" || (raw as any).app !== "pathly") {
-    throw new Error("No es un fichero de exportación de Pathly");
+    throw new Error("Not a Pathly export file");
   }
   let data: any = raw;
   let v = Number(data.schemaVersion);
-  if (!Number.isInteger(v) || v < 1) throw new Error("schemaVersion inválido");
+  if (!Number.isInteger(v) || v < 1) throw new Error("Invalid schemaVersion");
   if (v > EXPORT_SCHEMA_VERSION) {
-    throw new Error(`El fichero es de una versión más nueva (v${v}); esta app soporta hasta v${EXPORT_SCHEMA_VERSION}`);
+    throw new Error(`The file comes from a newer version (v${v}); this app supports up to v${EXPORT_SCHEMA_VERSION}`);
   }
   while (v < EXPORT_SCHEMA_VERSION) {
     const step = MIGRATIONS[v];
-    if (!step) throw new Error(`Falta la migración v${v} → v${v + 1}`);
+    if (!step) throw new Error(`Missing migration v${v} → v${v + 1}`);
     data = step(data);
     v++;
   }
@@ -94,22 +94,22 @@ const toCsv = (rows: Record<string, unknown>[]) => {
 export function exportProcessesCsv(repo: Repo): string {
   return toCsv(
     repo.listProcesses().map((p: Process & any) => ({
-      empresa: p.company.name,
-      puesto: p.role,
-      estado: STATUS_LABEL[p.status as keyof typeof STATUS_LABEL],
-      fase: STAGE_LABEL[p.stage as keyof typeof STAGE_LABEL],
-      ubicacion: p.location,
-      modalidad: p.workMode,
-      fuente: p.source,
-      salario_min: p.salaryMin,
-      salario_max: p.salaryMax,
-      moneda: p.currency,
-      aplicado: p.appliedAt,
-      cerrado: p.closedAt,
-      ultima_actividad: p.lastEntryDate,
-      entradas: p.entryCount,
+      company: p.company.name,
+      role: p.role,
+      status: STATUS_LABEL[p.status as keyof typeof STATUS_LABEL],
+      stage: STAGE_LABEL[p.stage as keyof typeof STAGE_LABEL],
+      location: p.location,
+      work_mode: p.workMode,
+      source: p.source,
+      salary_min: p.salaryMin,
+      salary_max: p.salaryMax,
+      currency: p.currency,
+      applied: p.appliedAt,
+      closed: p.closedAt,
+      last_activity: p.lastEntryDate,
+      entries: p.entryCount,
       url: p.jobUrl,
-      resumen: p.summary,
+      summary: p.summary,
     })),
   );
 }
@@ -118,20 +118,20 @@ export function exportEntriesCsv(repo: Repo): string {
   const procs = new Map(repo.listProcesses().map((p) => [p.id, p]));
   return toCsv(
     repo.db.select("entries", "1=1", [], `"date"`).map((e) => ({
-      empresa: procs.get(e.processId)?.company.name ?? "",
-      puesto: procs.get(e.processId)?.role ?? "",
-      fecha: e.date,
-      fecha_aprox: e.dateIsApprox,
-      tipo: e.kind,
-      tipo_entrevista: e.interviewType,
-      titulo: e.title,
-      entrevistadores: e.interviewers,
-      resumen: e.summary,
-      temas: e.topics,
-      decisiones: e.decisions,
-      siguientes_pasos: e.nextSteps,
-      autoevaluacion: e.selfAssessment,
-      notas_originales: e.rawNotes,
+      company: procs.get(e.processId)?.company.name ?? "",
+      role: procs.get(e.processId)?.role ?? "",
+      date: e.date,
+      date_approx: e.dateIsApprox,
+      kind: e.kind,
+      interview_type: e.interviewType,
+      title: e.title,
+      interviewers: e.interviewers,
+      summary: e.summary,
+      topics: e.topics,
+      decisions: e.decisions,
+      next_steps: e.nextSteps,
+      self_assessment: e.selfAssessment,
+      raw_notes: e.rawNotes,
     })),
   );
 }

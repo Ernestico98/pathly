@@ -47,9 +47,9 @@ class AnthropicProvider implements LlmProvider {
         system,
         messages: [{ role: "user", content: prompt }],
       });
-      if (res.stop_reason === "refusal") throw new LlmError("El modelo rechazó la petición.");
-      if (res.stop_reason === "max_tokens") throw new LlmError("La respuesta se cortó (max_tokens).");
-      if (!res.parsed_output) throw new LlmError("El modelo no devolvió JSON válido.");
+      if (res.stop_reason === "refusal") throw new LlmError("The model declined the request.");
+      if (res.stop_reason === "max_tokens") throw new LlmError("The response was cut off (max_tokens).");
+      if (!res.parsed_output) throw new LlmError("The model did not return valid JSON.");
       return res.parsed_output as z.infer<S>;
     } catch (err) {
       throw wrapAnthropic(err);
@@ -74,7 +74,7 @@ class AnthropicProvider implements LlmProvider {
           messages,
         });
         const res = await stream.finalMessage();
-        if (res.stop_reason === "refusal") throw new LlmError("El modelo rechazó la petición.");
+        if (res.stop_reason === "refusal") throw new LlmError("The model declined the request.");
         if (res.stop_reason === "pause_turn") {
           messages.push({ role: "assistant", content: res.content });
           continue;
@@ -89,7 +89,7 @@ class AnthropicProvider implements LlmProvider {
           .join("")
           .trim();
       }
-      throw new LlmError("La búsqueda web no terminó a tiempo.");
+      throw new LlmError("Web search did not finish in time.");
     } catch (err) {
       throw wrapAnthropic(err);
     }
@@ -99,13 +99,13 @@ class AnthropicProvider implements LlmProvider {
 function wrapAnthropic(err: unknown): Error {
   if (err instanceof LlmError) return err;
   if (err instanceof Anthropic.AuthenticationError)
-    return new LlmError("Falta o no es válida la API key de Anthropic (ANTHROPIC_API_KEY en .env).", 401);
-  if (err instanceof Anthropic.NotFoundError) return new LlmError("Modelo de Claude no encontrado: revisa Ajustes.", 400);
-  if (err instanceof Anthropic.RateLimitError) return new LlmError("Rate limit de Anthropic, prueba en un momento.", 429);
-  if (err instanceof Anthropic.APIConnectionError) return new LlmError("No se pudo conectar con la API de Anthropic.");
-  if (err instanceof Anthropic.APIError) return new LlmError(`Error de Anthropic: ${err.message}`);
+    return new LlmError("The Anthropic API key is missing or invalid (ANTHROPIC_API_KEY in .env).", 401);
+  if (err instanceof Anthropic.NotFoundError) return new LlmError("Claude model not found: check Settings.", 400);
+  if (err instanceof Anthropic.RateLimitError) return new LlmError("Anthropic rate limit hit, try again shortly.", 429);
+  if (err instanceof Anthropic.APIConnectionError) return new LlmError("Could not reach the Anthropic API.");
+  if (err instanceof Anthropic.APIError) return new LlmError(`Anthropic error: ${err.message}`);
   if (err instanceof Error && /credentials|apiKey|authToken/i.test(err.message))
-    return new LlmError("Falta la API key de Anthropic (ANTHROPIC_API_KEY en .env).", 401);
+    return new LlmError("Missing Anthropic API key (ANTHROPIC_API_KEY in .env).", 401);
   return err instanceof Error ? err : new Error(String(err));
 }
 
@@ -127,12 +127,12 @@ class OllamaProvider implements LlmProvider {
         signal: AbortSignal.timeout(10 * 60_000),
       });
     } catch {
-      throw new LlmError(`No se pudo conectar con Ollama en ${this.s.ollamaUrl}. ¿Está corriendo \`ollama serve\`?`);
+      throw new LlmError(`Could not reach Ollama at ${this.s.ollamaUrl}. Is \`ollama serve\` running?`);
     }
     if (!res.ok) {
       const msg = await res.text();
       throw new LlmError(
-        res.status === 404 ? `Ollama no tiene el modelo "${this.s.ollamaModel}" (ollama pull ${this.s.ollamaModel}).` : `Ollama: ${msg}`,
+        res.status === 404 ? `Ollama doesn't have the model "${this.s.ollamaModel}" (ollama pull ${this.s.ollamaModel}).` : `Ollama: ${msg}`,
       );
     }
     const data = (await res.json()) as { message?: { content?: string } };
@@ -145,17 +145,17 @@ class OllamaProvider implements LlmProvider {
       format,
       messages: [
         { role: "system", content: system },
-        { role: "user", content: `${prompt}\n\nResponde SOLO con JSON que cumpla este esquema:\n${JSON.stringify(format)}` },
+        { role: "user", content: `${prompt}\n\nReply ONLY with JSON matching this schema:\n${JSON.stringify(format)}` },
       ],
     });
     let parsed: unknown;
     try {
       parsed = JSON.parse(raw.replace(/^```(?:json)?\s*|\s*```$/g, ""));
     } catch {
-      throw new LlmError("Ollama no devolvió JSON válido.");
+      throw new LlmError("Ollama did not return valid JSON.");
     }
     const out = schema.safeParse(parsed);
-    if (!out.success) throw new LlmError(`La respuesta de Ollama no cumple el esquema: ${out.error.issues[0]?.message}`);
+    if (!out.success) throw new LlmError(`Ollama's response does not match the schema: ${out.error.issues[0]?.message}`);
     return out.data;
   }
 

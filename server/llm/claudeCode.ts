@@ -36,7 +36,7 @@ function run(bin: string, args: string[], input: string): Promise<CliResult> {
     let err = "";
     const timer = setTimeout(() => {
       child.kill("SIGTERM");
-      reject(new LlmError("Claude Code tardó demasiado (más de 5 min)."));
+      reject(new LlmError("Claude Code took too long (over 5 min)."));
     }, TIMEOUT_MS);
     child.stdout.on("data", (d) => (out += d));
     child.stderr.on("data", (d) => (err += d));
@@ -45,8 +45,8 @@ function run(bin: string, args: string[], input: string): Promise<CliResult> {
       reject(
         new LlmError(
           e.code === "ENOENT"
-            ? `No se encontró el ejecutable de Claude Code ("${bin}"). Indica la ruta completa en Ajustes (p. ej. la salida de \`which claude\`).`
-            : `No se pudo ejecutar Claude Code: ${e.message}`,
+            ? `Claude Code executable not found ("${bin}"). Set the full path in Settings (e.g. the output of \`which claude\`).`
+            : `Could not run Claude Code: ${e.message}`,
         ),
       );
     });
@@ -57,7 +57,7 @@ function run(bin: string, args: string[], input: string): Promise<CliResult> {
         resolve(JSON.parse(line) as CliResult);
       } catch {
         const msg = (err || out).trim().split("\n").slice(-3).join(" ").slice(0, 400);
-        reject(new LlmError(/log ?in|auth|credential/i.test(msg) ? `Claude Code no tiene sesión iniciada: ejecuta \`claude\` y haz login. (${msg})` : `Claude Code terminó con código ${code}: ${msg || "sin salida"}`));
+        reject(new LlmError(/log ?in|auth|credential/i.test(msg) ? `Claude Code is not logged in: run \`claude\` and log in. (${msg})` : `Claude Code exited with code ${code}: ${msg || "no output"}`));
       }
     });
     child.stdin.end(input);
@@ -66,9 +66,9 @@ function run(bin: string, args: string[], input: string): Promise<CliResult> {
 
 function check(r: CliResult): CliResult {
   if (r.is_error || r.subtype !== "success") {
-    const msg = (r.result ?? r.subtype ?? "error desconocido").slice(0, 400);
-    if (r.api_error_status === 429 || /usage limit|rate limit/i.test(msg)) throw new LlmError(`Has alcanzado el límite de uso de tu plan: ${msg}`, 429);
-    if (/log ?in|auth|credential/i.test(msg)) throw new LlmError(`Claude Code no tiene sesión iniciada: ejecuta \`claude\` y haz login. (${msg})`, 401);
+    const msg = (r.result ?? r.subtype ?? "unknown error").slice(0, 400);
+    if (r.api_error_status === 429 || /usage limit|rate limit/i.test(msg)) throw new LlmError(`You have hit your plan's usage limit: ${msg}`, 429);
+    if (/log ?in|auth|credential/i.test(msg)) throw new LlmError(`Claude Code is not logged in: run \`claude\` and log in. (${msg})`, 401);
     throw new LlmError(`Claude Code: ${msg}`);
   }
   return r;
@@ -107,11 +107,11 @@ export class ClaudeCodeProvider implements LlmProvider {
       try {
         value = JSON.parse(r.result.replace(/^```(?:json)?\s*|\s*```$/g, ""));
       } catch {
-        throw new LlmError("Claude Code no devolvió JSON válido.");
+        throw new LlmError("Claude Code did not return valid JSON.");
       }
     }
     const parsed = schema.safeParse(value);
-    if (!parsed.success) throw new LlmError(`La respuesta de Claude Code no cumple el esquema: ${parsed.error.issues[0]?.message}`);
+    if (!parsed.success) throw new LlmError(`Claude Code's response does not match the schema: ${parsed.error.issues[0]?.message}`);
     return parsed.data;
   }
 

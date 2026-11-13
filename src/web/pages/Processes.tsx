@@ -8,17 +8,17 @@ import { Empty, ErrorBox, Spinner, StatusBadge, fmtDate, relDays } from "../comp
 
 type Scope = "active" | "closed" | "wishlist" | "all";
 const SCOPES: { key: Scope; label: string; test: (s: ProcessStatus) => boolean }[] = [
-  { key: "active", label: "Activos", test: (s) => isActive(s) && s !== "wishlist" },
+  { key: "active", label: "Active", test: (s) => isActive(s) && s !== "wishlist" },
   { key: "wishlist", label: "Wishlist", test: (s) => s === "wishlist" },
-  { key: "closed", label: "Cerrados", test: (s) => !isActive(s) },
-  { key: "all", label: "Todos", test: () => true },
+  { key: "closed", label: "Closed", test: (s) => !isActive(s) },
+  { key: "all", label: "All", test: () => true },
 ];
 
 export default function Processes() {
   const q = useQuery({ queryKey: ["processes"], queryFn: api.processes });
   const [params, setParams] = useSearchParams();
-  const scope = (params.get("ver") as Scope) || "active";
-  const view = params.get("vista") === "tablero" ? "board" : "list";
+  const scope = (params.get("show") as Scope) || "active";
+  const view = params.get("view") === "board" ? "board" : "list";
   const [search, setSearch] = useState("");
   const nav = useNavigate();
 
@@ -38,7 +38,7 @@ export default function Processes() {
       .sort((a, b) => (b.lastEntryDate ?? b.appliedAt ?? "").localeCompare(a.lastEntryDate ?? a.appliedAt ?? ""));
   }, [q.data, scope, search]);
 
-  if (q.isPending) return <Spinner label="Cargando…" />;
+  if (q.isPending) return <Spinner label="Loading…" />;
   if (q.error) return <ErrorBox error={q.error} />;
 
   const counts = Object.fromEntries(SCOPES.map((s) => [s.key, q.data.filter((p) => s.test(p.status)).length]));
@@ -46,61 +46,61 @@ export default function Processes() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight">Procesos</h1>
-        <Link to="/procesos/nuevo" className="btn btn-primary">
-          + Nuevo proceso
+        <h1 className="text-xl font-semibold tracking-tight">Processes</h1>
+        <Link to="/processes/new" className="btn btn-primary">
+          + New process
         </Link>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex flex-wrap gap-1" role="tablist" aria-label="Filtrar por estado">
+        <div className="flex flex-wrap gap-1" role="tablist" aria-label="Filter by status">
           {SCOPES.map((s) => (
             <button
               key={s.key}
               role="tab"
               aria-selected={scope === s.key}
-              onClick={() => set("ver", s.key)}
+              onClick={() => set("show", s.key)}
               className={`rounded-full border px-3 py-1 text-sm ${scope === s.key ? "border-accent bg-accent-soft text-accent" : "border-border text-text-2 hover:text-text"}`}
             >
               {s.label} <span className="tabular-nums opacity-70">{counts[s.key]}</span>
             </button>
           ))}
         </div>
-        <input className="input ml-auto max-w-56" placeholder="Buscar empresa o puesto…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Buscar" />
-        <div className="flex rounded-lg border border-border p-0.5" role="group" aria-label="Vista">
+        <input className="input ml-auto max-w-56" placeholder="Search company or role…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search" />
+        <div className="flex rounded-lg border border-border p-0.5" role="group" aria-label="View">
           {(["list", "board"] as const).map((v) => (
             <button
               key={v}
-              onClick={() => set("vista", v === "board" ? "tablero" : null)}
+              onClick={() => set("view", v === "board" ? "board" : null)}
               aria-pressed={view === v}
               className={`rounded-md px-2.5 py-1 text-sm ${view === v ? "bg-surface-2 font-medium" : "text-text-2"}`}
             >
-              {v === "list" ? "Lista" : "Tablero"}
+              {v === "list" ? "List" : "Board"}
             </button>
           ))}
         </div>
       </div>
 
       {rows.length === 0 ? (
-        <Empty>No hay procesos con este filtro.</Empty>
+        <Empty>No processes match this filter.</Empty>
       ) : view === "list" ? (
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-text-2">
-                <th className="px-4 py-2 font-medium">Empresa</th>
-                <th className="px-4 py-2 font-medium">Estado</th>
-                <th className="px-4 py-2 font-medium">Fase</th>
-                <th className="px-4 py-2 font-medium">Entradas</th>
-                <th className="px-4 py-2 font-medium">Aplicado</th>
-                <th className="px-4 py-2 font-medium">Última actividad</th>
+                <th className="px-4 py-2 font-medium">Company</th>
+                <th className="px-4 py-2 font-medium">Status</th>
+                <th className="px-4 py-2 font-medium">Stage</th>
+                <th className="px-4 py-2 font-medium">Entries</th>
+                <th className="px-4 py-2 font-medium">Applied</th>
+                <th className="px-4 py-2 font-medium">Last activity</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {rows.map((p) => (
-                <tr key={p.id} className="cursor-pointer hover:bg-surface-2" onClick={() => nav(`/procesos/${p.id}`)}>
+                <tr key={p.id} className="cursor-pointer hover:bg-surface-2" onClick={() => nav(`/processes/${p.id}`)}>
                   <td className="px-4 py-2.5">
-                    <Link to={`/procesos/${p.id}`} className="font-medium hover:underline" onClick={(e) => e.stopPropagation()}>
+                    <Link to={`/processes/${p.id}`} className="font-medium hover:underline" onClick={(e) => e.stopPropagation()}>
                       {p.company.name}
                     </Link>
                     {p.role && <div className="text-xs text-text-2">{p.role}</div>}
@@ -137,7 +137,7 @@ function Board({ rows }: { rows: ProcessWithCompany[] }) {
             {rows
               .filter((r) => r.status === s)
               .map((p) => (
-                <Link key={p.id} to={`/procesos/${p.id}`} className="card block p-3 text-sm hover:border-accent/50">
+                <Link key={p.id} to={`/processes/${p.id}`} className="card block p-3 text-sm hover:border-accent/50">
                   <div className="font-medium">{p.company.name}</div>
                   {p.role && <div className="text-xs text-text-2">{p.role}</div>}
                   <div className="mt-2 flex items-center justify-between text-xs text-text-3">

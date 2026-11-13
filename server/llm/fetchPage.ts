@@ -30,9 +30,9 @@ export async function fetchPageText(url: string): Promise<string> {
   try {
     u = new URL(url);
   } catch {
-    throw new LlmError("URL no válida", 400);
+    throw new LlmError("Invalid URL", 400);
   }
-  if (!/^https?:$/.test(u.protocol)) throw new LlmError("Solo se admiten URLs http(s)", 400);
+  if (!/^https?:$/.test(u.protocol)) throw new LlmError("Only http(s) URLs are supported", 400);
   let res: Response;
   try {
     res = await fetch(u, {
@@ -41,12 +41,12 @@ export async function fetchPageText(url: string): Promise<string> {
       signal: AbortSignal.timeout(15_000),
     });
   } catch {
-    throw new LlmError(`No se pudo descargar ${u.host}. Pega el texto manualmente.`, 422);
+    throw new LlmError(`Could not download ${u.host}. Paste the text manually.`, 422);
   }
-  if (!res.ok) throw new LlmError(`${u.host} respondió ${res.status}. Pega el texto manualmente.`, 422);
+  if (!res.ok) throw new LlmError(`${u.host} responded ${res.status}. Paste the text manually.`, 422);
   const body = await res.text();
   const type = res.headers.get("content-type") ?? "";
   const text = type.includes("html") ? htmlToText(body) : body;
-  if (text.length < 200) throw new LlmError(`No se pudo leer contenido útil de ${u.host} (¿requiere login o JavaScript?). Pega el texto manualmente.`, 422);
+  if (text.length < 200) throw new LlmError(`Could not read useful content from ${u.host} (login or JavaScript required?). Paste the text manually.`, 422);
   return text.slice(0, MAX_CHARS);
 }

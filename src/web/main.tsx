@@ -14,10 +14,10 @@ import "./styles.css";
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 10_000, retry: 1, refetchOnWindowFocus: false } } });
 
 const NAV = [
-  { to: "/", label: "Resumen", end: true },
-  { to: "/procesos", label: "Procesos" },
-  { to: "/analiticas", label: "Analíticas" },
-  { to: "/ajustes", label: "Ajustes" },
+  { to: "/", label: "Overview", end: true },
+  { to: "/processes", label: "Processes" },
+  { to: "/analytics", label: "Analytics" },
+  { to: "/settings", label: "Settings" },
 ];
 
 function Layout() {
@@ -32,7 +32,7 @@ function Layout() {
             </svg>
             Pathly
           </NavLink>
-          <nav className="order-last -mx-2 flex w-full gap-1 overflow-x-auto sm:order-none sm:mx-0 sm:w-auto sm:flex-1" aria-label="Principal">
+          <nav className="order-last -mx-2 flex w-full gap-1 overflow-x-auto sm:order-none sm:mx-0 sm:w-auto sm:flex-1" aria-label="Main">
             {NAV.map((n) => (
               <NavLink
                 key={n.to}
@@ -46,21 +46,21 @@ function Layout() {
               </NavLink>
             ))}
           </nav>
-          <NavLink to="/procesos/nuevo" className="btn btn-primary ml-auto sm:ml-0">
-            + <span className="hidden sm:inline">Nuevo proceso</span><span className="sm:hidden">Nuevo</span>
+          <NavLink to="/processes/new" className="btn btn-primary ml-auto sm:ml-0">
+            + <span className="hidden sm:inline">New process</span><span className="sm:hidden">New</span>
           </NavLink>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6">
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/procesos" element={<Processes />} />
-          <Route path="/procesos/nuevo" element={<NewProcess />} />
-          <Route path="/procesos/:id" element={<ProcessDetail />} />
-          <Route path="/procesos/:id/entrada" element={<NewEntry />} />
-          <Route path="/analiticas" element={<Analytics />} />
-          <Route path="/ajustes" element={<Settings />} />
-          <Route path="*" element={<p className="text-text-2">Página no encontrada.</p>} />
+          <Route path="/processes" element={<Processes />} />
+          <Route path="/processes/new" element={<NewProcess />} />
+          <Route path="/processes/:id" element={<ProcessDetail />} />
+          <Route path="/processes/:id/entry" element={<NewEntry />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="*" element={<p className="text-text-2">Page not found.</p>} />
         </Routes>
       </main>
     </div>

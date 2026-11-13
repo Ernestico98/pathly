@@ -13,49 +13,51 @@ import type { LlmProvider } from "./provider";
 
 const lang = (s: LlmSettings) =>
   s.language === "es"
-    ? "Escribe siempre en español."
+    ? "Always write in Spanish."
     : s.language === "en"
       ? "Always write in English."
-      : "Escribe en el mismo idioma que use el usuario en sus notas.";
+      : "Write in the same language the user uses in their notes.";
 
-const SYSTEM_BASE = `Eres el asistente de Pathly, una herramienta personal para llevar el seguimiento de procesos de selección (entrevistas de trabajo) de un ingeniero de software.
-Tu trabajo es ordenar y clarificar lo que el usuario escribe, sin inventar hechos. Si algo no aparece en las notas, no lo supongas: déjalo vacío o null.
-Reglas:
-- No conviertas expectativas en hechos: "me dirán si paso" NO es "avanza a la siguiente ronda".
-- Respeta cifras y monedas tal como las escribe el usuario (si dice 75k sin moneda, no añadas $ ni €).
-- Los temas, decisiones y siguientes pasos de una entrada salen SOLO de las notas de esa entrada, no del contexto previo.
-- Escribe en primera persona, como si fueran las notas del propio usuario ("Hablé con la CTO…"), nunca "el candidato". Sin adornos ("Se llevó a cabo…" sobra). Respeta los términos técnicos tal cual (evals, RAG, queues…).
-- Sé conservador con estados y fases: sugiere un cambio solo si las notas lo dicen claramente; una primera conversación con un CTO/CEO no es la fase final. Sé conciso y concreto; prioriza lo que le servirá al usuario para preparar la siguiente entrevista.`;
+const SYSTEM_BASE = `You are the assistant inside Pathly, a personal tool a software engineer uses to track job application processes and interviews.
+Your job is to organise and clarify what the user writes, without inventing facts. If something isn't in the notes, don't assume it: leave it empty or null.
+Rules:
+- Don't turn expectations into facts: "they'll tell me if I pass" is NOT "advances to the next round".
+- Keep figures and currencies exactly as the user wrote them (if they say 75k with no currency, don't add $ or €).
+- An entry's topics, decisions and next steps come ONLY from that entry's notes, not from earlier context.
+- Write in the first person, as if they were the user's own notes ("I spoke with the CTO…"), never "the candidate". No filler. Keep technical terms as written (evals, RAG, queues…).
+- Be conservative with statuses and stages: suggest a change only when the notes clearly say so; a first conversation with a CTO/CEO is not the final stage. Be concise and concrete; prioritise what will help the user prepare for the next interview.`;
 
 // ---------------------------------------------------------------- entry
 
 export const EntryDraft = z.object({
-  title: z.string().describe("Título corto de la entrada, p. ej. 'Entrevista técnica con el CTO'"),
+  title: z.string().describe("Short entry title, e.g. 'Technical interview with the CTO'"),
   kind: EntryKind,
-  interviewType: InterviewType.nullable().describe("Solo si kind es interview/assessment"),
-  interviewers: z.array(z.string()).describe("Nombres o roles de los entrevistadores mencionados"),
-  summary: z.string().describe("Resumen claro y bien redactado en Markdown (3-8 frases o viñetas)"),
-  topics: z.array(z.string()).describe("Temas tratados y preguntas que hicieron"),
-  decisions: z.array(z.string()).describe("Decisiones tomadas por cualquiera de las partes (incluye lo que dijo el usuario sobre salario, fechas, etc.)"),
-  nextSteps: z.array(z.string()).describe("Siguientes pasos acordados o pendientes"),
-  selfAssessment: z.number().int().min(1).max(5).nullable().describe("1-5 según cómo dice el usuario que le fue; null si no lo dice"),
-  suggestedStatus: ProcessStatus.nullable().describe("Nuevo estado del proceso si las notas lo implican; null si no cambia"),
-  statusReason: z.string().describe("Motivo breve del cambio de estado, o cadena vacía"),
-  suggestedStage: Stage.nullable().describe("Fase en la que queda el proceso tras esta entrada; null si no cambia"),
-  processSummary: z.string().describe("Resumen ACTUALIZADO del proceso completo en Markdown: en qué punto está, qué ha pasado, qué queda y cualquier dato clave (salario, ubicación, contactos)"),
+  interviewType: InterviewType.nullable().describe("Only when kind is interview/assessment"),
+  interviewers: z.array(z.string()).describe("Names or roles of the interviewers mentioned"),
+  summary: z.string().describe("Clear, well-written Markdown summary (3-8 sentences or bullets)"),
+  topics: z.array(z.string()).describe("Topics covered and questions asked"),
+  decisions: z.array(z.string()).describe("Decisions made by either side (including what the user said about salary, dates, etc.)"),
+  nextSteps: z.array(z.string()).describe("Agreed or pending next steps"),
+  selfAssessment: z.number().int().min(1).max(5).nullable().describe("1-5 based on how the user says it went; null if they don't say"),
+  suggestedStatus: ProcessStatus.nullable().describe("New process status if the notes imply one; null if unchanged"),
+  statusReason: z.string().describe("Short reason for the status change, or an empty string"),
+  suggestedStage: Stage.nullable().describe("Stage the process is at after this entry; null if unchanged"),
+  processSummary: z
+    .string()
+    .describe("UPDATED Markdown summary of the whole process: where it stands, what has happened, what's left, and key facts (salary, location, contacts)"),
 });
 export type EntryDraft = z.infer<typeof EntryDraft>;
 
 function processContext(p: ProcessDetail, maxEntries = 8): string {
-  const entries = p.entries.slice(-maxEntries).map((e) => `- ${e.date ?? "sin fecha"} · ${e.title || e.kind}: ${e.summary || e.rawNotes}`);
+  const entries = p.entries.slice(-maxEntries).map((e) => `- ${e.date ?? "no date"} · ${e.title || e.kind}: ${e.summary || e.rawNotes}`);
   return [
-    `Empresa: ${p.company.name}`,
-    p.role && `Puesto: ${p.role}`,
-    `Estado actual: ${p.status} (${STATUS_LABEL[p.status]}) · Fase: ${p.stage} (${STAGE_LABEL[p.stage]})`,
-    p.company.summary && `Sobre la empresa:\n${p.company.summary.slice(0, 2000)}`,
-    p.company.notes && `Notas del usuario sobre la empresa:\n${p.company.notes.slice(0, 2000)}`,
-    p.summary && `Resumen actual del proceso:\n${p.summary}`,
-    entries.length ? `Últimas entradas de la cronología:\n${entries.join("\n")}` : "Aún no hay entradas en la cronología.",
+    `Company: ${p.company.name}`,
+    p.role && `Role: ${p.role}`,
+    `Current status: ${p.status} (${STATUS_LABEL[p.status]}) · Stage: ${p.stage} (${STAGE_LABEL[p.stage]})`,
+    p.company.summary && `About the company:\n${p.company.summary.slice(0, 2000)}`,
+    p.company.notes && `User's notes about the company:\n${p.company.notes.slice(0, 2000)}`,
+    p.summary && `Current process summary:\n${p.summary}`,
+    entries.length ? `Latest timeline entries:\n${entries.join("\n")}` : "No timeline entries yet.",
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -65,7 +67,7 @@ export async function draftEntry(llm: LlmProvider, s: LlmSettings, p: ProcessDet
   return llm.json({
     system: `${SYSTEM_BASE}\n${lang(s)}`,
     schema: EntryDraft,
-    prompt: `Contexto del proceso:\n${processContext(p)}\n\n---\nNueva entrada${date ? ` (fecha ${date})` : ""}. Notas en bruto del usuario:\n"""\n${rawNotes}\n"""\n\nEstructura esta entrada. Estados válidos: ${Object.entries(STATUS_LABEL).map(([k, v]) => `${k}=${v}`).join(", ")}. Sugiere suggestedStatus solo si las notas indican un cambio (p. ej. rechazo → rejected, oferta → offer, primera entrevista desde applied → ongoing).`,
+    prompt: `Process context:\n${processContext(p)}\n\n---\nNew entry${date ? ` (date ${date})` : ""}. The user's raw notes:\n"""\n${rawNotes}\n"""\n\nStructure this entry. Valid statuses: ${Object.entries(STATUS_LABEL).map(([k, v]) => `${k}=${v}`).join(", ")}. Only suggest suggestedStatus when the notes indicate a change (e.g. rejection → rejected, offer → offer, first interview while applied → ongoing).`,
   });
 }
 
@@ -74,7 +76,7 @@ export async function draftEntry(llm: LlmProvider, s: LlmSettings, p: ProcessDet
 export async function regenerateProcessSummary(llm: LlmProvider, s: LlmSettings, p: ProcessDetail) {
   return llm.text({
     system: `${SYSTEM_BASE}\n${lang(s)}`,
-    prompt: `${processContext(p, 50)}\n\n---\nEscribe un resumen actualizado del proceso en Markdown (máx. ~150 palabras): en qué punto está, qué ha pasado, señales positivas/negativas y qué queda pendiente. Devuelve solo el resumen.`,
+    prompt: `${processContext(p, 50)}\n\n---\nWrite an up-to-date Markdown summary of the process (max ~150 words): where it stands, what has happened, positive/negative signals and what's pending. Return only the summary.`,
   });
 }
 
@@ -87,36 +89,34 @@ export async function companyBrief(
 ) {
   return llm.text({
     webSearch: true,
-    system: `${SYSTEM_BASE}\n${lang(s)}\nAhora preparas fichas de empresa para repasar antes de una entrevista. Distingue claramente lo verificado de lo que no lo está; si no encuentras un dato, di "desconocido" en lugar de inventarlo.`,
-    prompt: `Prepara una ficha de la empresa **${input.name}**${input.website ? ` (${input.website})` : ""}.
-${input.pageText ? `\nContenido de su web:\n"""\n${input.pageText.slice(0, 30_000)}\n"""\n` : ""}${input.notes ? `\nNotas que ya tiene el usuario:\n"""\n${input.notes}\n"""\n` : ""}
-Formato Markdown con estas secciones (omite las que no tengan información):
-## A qué se dedica
-## Producto y clientes
-## Etapa, financiación y tamaño
-## Tecnología
-## Cultura y equipo
-## Puntos para la entrevista
-(preguntas inteligentes que el usuario podría hacer y cosas que conviene tener presentes)
+    system: `${SYSTEM_BASE}\n${lang(s)}\nYou are now writing company briefs to review before an interview. Clearly separate what is verified from what isn't; if you can't find a fact, say "unknown" instead of making it up.`,
+    prompt: `Write a brief about the company **${input.name}**${input.website ? ` (${input.website})` : ""}.
+${input.pageText ? `\nContent of their website:\n"""\n${input.pageText.slice(0, 30_000)}\n"""\n` : ""}${input.notes ? `\nNotes the user already has:\n"""\n${input.notes}\n"""\n` : ""}
+Markdown with these sections (omit any without information):
+## What they do
+## Product and customers
+## Stage, funding and size
+## Technology
+## Culture and team
+## Interview pointers
+(smart questions the user could ask and things worth keeping in mind)
 
-Devuelve solo la ficha, sin preámbulo.`,
+Return only the brief, no preamble.`,
   });
 }
 
 // ---------------------------------------------------------------- job brief
 
 export const JobBrief = z.object({
-  role: z.string().describe("Título del puesto"),
+  role: z.string().describe("Job title"),
   location: z.string(),
   workMode: WorkMode,
-  salaryMin: z.number().nullable().describe("Salario anual mínimo si aparece, en unidades (no miles)"),
+  salaryMin: z.number().nullable().describe("Minimum yearly salary if stated, in units (not thousands)"),
   salaryMax: z.number().nullable(),
-  currency: z.string().describe("Código ISO, p. ej. EUR, USD, GBP"),
+  currency: z.string().describe("ISO code, e.g. EUR, USD, GBP"),
   summary: z
     .string()
-    .describe(
-      "Resumen del puesto en Markdown con secciones: ## Qué harías, ## Requisitos, ## Stack, ## Condiciones, ## Señales / dudas a aclarar",
-    ),
+    .describe("Markdown role summary with sections: ## What you'd do, ## Requirements, ## Stack, ## Conditions, ## Signals / questions to clarify"),
 });
 export type JobBrief = z.infer<typeof JobBrief>;
 
@@ -124,6 +124,6 @@ export async function jobBrief(llm: LlmProvider, s: LlmSettings, input: { compan
   return llm.json({
     system: `${SYSTEM_BASE}\n${lang(s)}`,
     schema: JobBrief,
-    prompt: `Oferta de empleo${input.company ? ` de ${input.company}` : ""}:\n"""\n${input.jobText.slice(0, 40_000)}\n"""\n\nExtrae los datos y resume el puesto. Si un dato no aparece usa "" / null / "unknown".`,
+    prompt: `Job posting${input.company ? ` at ${input.company}` : ""}:\n"""\n${input.jobText.slice(0, 40_000)}\n"""\n\nExtract the data and summarise the role. If something isn't stated use "" / null / "unknown".`,
   });
 }

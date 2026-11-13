@@ -1,7 +1,7 @@
 /**
- * Import the original spreadsheet (CSV) into Pathly.
+ * Import a tracking spreadsheet (CSV, or .numbers on macOS) into Pathly.
  *
- *   pnpm seed:csv "<ruta al .csv o .numbers>" [--replace] [--llm] [--out data/seed.json]
+ *   pnpm seed:csv "<path to .csv or .numbers>" [--replace] [--llm] [--out data/seed.json]
  *
  * --replace  wipe the DB first (default: merge)
  * --llm      after importing, generate each process summary with the configured LLM
@@ -27,14 +27,14 @@ const flag = (f: string) => args.includes(f);
 const outIdx = args.indexOf("--out");
 const out = outIdx >= 0 ? args[outIdx + 1] : "data/seed-from-csv.json";
 if (!file) {
-  console.error('Uso: pnpm seed:csv "<ruta al csv>" [--replace] [--llm]');
+  console.error('Usage: pnpm seed:csv "<path to .csv or .numbers>" [--replace] [--llm]');
   process.exit(1);
 }
 
 /** A .numbers file is exported to CSV through Numbers itself (macOS only); the original is not modified. */
 function toCsvPath(input: string): string {
   if (!/\.numbers$/i.test(input)) return input;
-  if (process.platform !== "darwin") throw new Error("Para importar .numbers hace falta macOS con Numbers; exporta a CSV a mano.");
+  if (process.platform !== "darwin") throw new Error("Importing .numbers needs macOS with Numbers installed; export to CSV manually instead.");
   const out = path.join(os.tmpdir(), `pathly-${Date.now()}.csv`);
   const esc = (p: string) => p.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
   execFileSync("osascript", [
@@ -44,14 +44,14 @@ function toCsvPath(input: string): string {
     "-e", `close d saving no`,
     "-e", `end tell`,
   ]);
-  console.log(`Exportado ${path.basename(input)} → CSV con Numbers`);
+  console.log(`Exported ${path.basename(input)} → CSV via Numbers`);
   return out;
 }
 
 const { data, report } = csvToExport(decodeCsvBytes(fs.readFileSync(toCsvPath(file))));
 fs.mkdirSync(path.dirname(out!), { recursive: true });
 fs.writeFileSync(out!, JSON.stringify(data, null, 2));
-console.log(`CSV → ${data.companies.length} empresas, ${data.processes.length} procesos, ${data.entries.length} entradas (copia en ${out})`);
+console.log(`CSV → ${data.companies.length} companies, ${data.processes.length} processes, ${data.entries.length} entries (copy at ${out})`);
 for (const w of report.warnings) console.warn(`  ⚠ ${w}`);
 
 const mode = flag("--replace") ? "replace" : "merge";
@@ -65,7 +65,7 @@ try {
     signal: AbortSignal.timeout(5000),
   });
   if (!res.ok) throw new Error(await res.text());
-  console.log("Importado vía API:", await res.json());
+  console.log("Imported via the API:", await res.json());
   viaApi = true;
 } catch (e) {
   if (e instanceof Error && !/fetch failed|ECONNREFUSED|timeout|aborted/i.test(e.message + String((e as any).cause))) throw e;
@@ -73,7 +73,7 @@ try {
 
 const db = await Db.open(path.resolve(process.env.PATHLY_DB ?? "data/pathly.db"));
 const repo = new Repo(db);
-if (!viaApi) console.log("Importado en el fichero de la BD:", importAll(repo, data, mode));
+if (!viaApi) console.log("Imported into the DB file:", importAll(repo, data, mode));
 
 if (flag("--llm")) {
   if (viaApi) {
@@ -86,7 +86,7 @@ if (flag("--llm")) {
   } else {
     const s = LlmSettings.parse(db.getSetting("llm") ?? {});
     const llm = makeProvider(s);
-    console.log(`Generando resúmenes con ${llm.label}…`);
+    console.log(`Generating summaries with ${llm.label}…`);
     for (const p of repo.listProcesses().filter((p) => p.entryCount > 0 && p.tags.includes("importado-excel"))) {
       try {
         repo.updateProcess(p.id, { summary: await regenerateProcessSummary(llm, s, repo.getProcess(p.id)) });

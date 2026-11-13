@@ -23,7 +23,7 @@ async function body<S extends z.ZodType>(c: { req: { json: () => Promise<unknown
   try {
     raw = await c.req.json();
   } catch {
-    throw new HTTPException(400, { message: "JSON inválido" });
+    throw new HTTPException(400, { message: "Invalid JSON" });
   }
   const r = schema.safeParse(raw);
   if (!r.success) {
@@ -41,10 +41,10 @@ export function createApp(repo: Repo) {
 
   app.onError((err, c) => {
     if (err instanceof HTTPException) return c.json({ error: err.message }, err.status);
-    if (err instanceof NotFound) return c.json({ error: `No encontrado: ${err.message}` }, 404);
+    if (err instanceof NotFound) return c.json({ error: `Not found: ${err.message}` }, 404);
     if (err instanceof LlmError) return c.json({ error: err.message }, err.status as 400);
     console.error(err);
-    return c.json({ error: err instanceof Error ? err.message : "Error interno" }, 500);
+    return c.json({ error: err instanceof Error ? err.message : "Internal error" }, 500);
   });
 
   // ---------- companies ----------
@@ -102,7 +102,7 @@ export function createApp(repo: Repo) {
     const input = await body(c, z.object({ url: z.string().default(""), text: z.string().default(""), company: z.string().default("") }));
     let jobText = input.text.trim();
     if (!jobText && input.url) jobText = await fetchPageText(input.url);
-    if (!jobText) throw new HTTPException(400, { message: "Indica una URL o pega la descripción del puesto" });
+    if (!jobText) throw new HTTPException(400, { message: "Provide a URL or paste the job description" });
     return c.json({ ...(await jobBrief(llm(), settings(), { company: input.company, jobText })), jobText });
   });
 
@@ -141,12 +141,12 @@ export function createApp(repo: Repo) {
   });
   app.get("/export/processes.csv", (c) => {
     c.header("content-type", "text/csv; charset=utf-8");
-    c.header("content-disposition", `attachment; filename="pathly-procesos.csv"`);
+    c.header("content-disposition", `attachment; filename="pathly-processes.csv"`);
     return c.body("﻿" + exportProcessesCsv(repo));
   });
   app.get("/export/entries.csv", (c) => {
     c.header("content-type", "text/csv; charset=utf-8");
-    c.header("content-disposition", `attachment; filename="pathly-entradas.csv"`);
+    c.header("content-disposition", `attachment; filename="pathly-entries.csv"`);
     return c.body("﻿" + exportEntriesCsv(repo));
   });
   app.post("/import", async (c) => {
@@ -155,12 +155,12 @@ export function createApp(repo: Repo) {
     try {
       raw = await c.req.json();
     } catch {
-      throw new HTTPException(400, { message: "JSON inválido" });
+      throw new HTTPException(400, { message: "Invalid JSON" });
     }
     try {
       return c.json(importAll(repo, raw, mode));
     } catch (e) {
-      if (e instanceof z.ZodError) throw new HTTPException(400, { message: `Fichero inválido: ${e.issues[0]?.path.join(".")} ${e.issues[0]?.message}` });
+      if (e instanceof z.ZodError) throw new HTTPException(400, { message: `Invalid file: ${e.issues[0]?.path.join(".")} ${e.issues[0]?.message}` });
       if (e instanceof Error && !(e instanceof HTTPException)) throw new HTTPException(400, { message: e.message });
       throw e;
     }

@@ -72,5 +72,5 @@ test("repo: entry with status change + export/import round trip", async () => {
 
 test("migrateExport rejects foreign and future files", () => {
   assert.throws(() => migrateExport({ app: "other" }));
-  assert.throws(() => migrateExport({ app: "pathly", schemaVersion: 99 }), /más nueva/);
+  assert.throws(() => migrateExport({ app: "pathly", schemaVersion: 99 }), /newer version/);
 });

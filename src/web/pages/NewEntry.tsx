@@ -6,12 +6,11 @@ import { ENTRY_KINDS, INTERVIEW_TYPES, PROCESS_STATUSES, STAGES, type EntryWithU
 import { api, type EntryDraft } from "../api";
 import { ErrorBox, Field, ListInput, MarkdownEditor, Spinner, StatusBadge, todayIso } from "../components/ui";
 
-const PLACEHOLDER = `Escribe como te salga, sin preocuparte por el formato. Por ejemplo:
-- ¿Con quién hablaste? (nombre / rol)
-- ¿Qué tipo de entrevista fue y qué te preguntaron?
-- ¿Cómo crees que te fue?
-- ¿Qué se decidió? (salario, fechas, ubicación…)
-- ¿Cuáles son los siguientes pasos?`;
+const PLACEHOLDER = `Write it however it comes, no need to worry about format. You can write in any language. For example:
+- Who did you talk to? (name / role)
+- What kind of interview was it and what did they ask?
+- How do you think it went?
+- What was decided? (salary, dates, location, next steps…)`;
 
 const draftKey = (id: string) => `pathly:entry-draft:${id}`;
 const load = (k: string) => {
@@ -58,11 +57,11 @@ export default function NewEntry() {
     onSuccess: () => {
       store(draftKey(id), "");
       qc.invalidateQueries();
-      nav(`/procesos/${id}`);
+      nav(`/processes/${id}`);
     },
   });
 
-  if (proc.isPending) return <Spinner label="Cargando…" />;
+  if (proc.isPending) return <Spinner label="Loading…" />;
   if (proc.error) return <ErrorBox error={proc.error} />;
   const p = proc.data;
 
@@ -99,44 +98,44 @@ export default function NewEntry() {
   return (
     <div className="mx-auto max-w-3xl space-y-5">
       <div>
-        <Link to={`/procesos/${id}`} className="text-sm text-text-2 hover:text-text">
+        <Link to={`/processes/${id}`} className="text-sm text-text-2 hover:text-text">
           ← {p.company.name}
         </Link>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight">Nueva entrada</h1>
+        <h1 className="mt-1 text-xl font-semibold tracking-tight">New entry</h1>
         <p className="text-sm text-text-2">
-          Cuenta lo que pasó; la IA lo ordena y tú revisas antes de guardar. Tus notas originales se guardan siempre.
+          Describe what happened; the AI organises it and you review before saving. Your original notes are always kept.
         </p>
       </div>
 
       <section className="card space-y-4 p-5">
         <div className="grid gap-4 sm:grid-cols-[12rem_1fr]">
-          <Field label="Fecha">
+          <Field label="Date">
             <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
           </Field>
         </div>
-        <Field label="¿Qué pasó?">
+        <Field label="What happened?">
           <textarea className="input min-h-56" value={raw} onChange={(e) => setRaw(e.target.value)} placeholder={PLACEHOLDER} autoFocus />
         </Field>
         <ErrorBox error={ai.error} />
         <div className="flex flex-wrap items-center justify-end gap-2">
-          {ai.isPending && <Spinner label="Resumiendo…" />}
+          {ai.isPending && <Spinner label="Summarising…" />}
           <button className="btn" disabled={raw.trim().length < 3 || save.isPending} onClick={saveWithoutAi}>
-            Guardar sin IA
+            Save without AI
           </button>
           <button className="btn btn-primary" disabled={raw.trim().length < 3 || ai.isPending} onClick={() => ai.mutate()}>
-            ✦ {draft ? "Volver a procesar" : "Procesar con IA"}
+            ✦ {draft ? "Process again" : "Process with AI"}
           </button>
         </div>
       </section>
 
       {draft && (
-        <section className="card space-y-4 p-5" aria-label="Revisión de la propuesta">
-          <h2 className="text-sm font-semibold">Revisa la propuesta</h2>
+        <section className="card space-y-4 p-5" aria-label="Review of the proposal">
+          <h2 className="text-sm font-semibold">Review the proposal</h2>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Título">
+            <Field label="Title">
               <input className="input" value={draft.title} onChange={(e) => set("title", e.target.value)} />
             </Field>
-            <Field label="Tipo">
+            <Field label="Type">
               <select className="input" value={draft.kind} onChange={(e) => set("kind", e.target.value as EntryDraft["kind"])}>
                 {ENTRY_KINDS.map((k) => (
                   <option key={k} value={k}>
@@ -145,7 +144,7 @@ export default function NewEntry() {
                 ))}
               </select>
             </Field>
-            <Field label="Tipo de entrevista">
+            <Field label="Interview type">
               <select className="input" value={draft.interviewType ?? ""} onChange={(e) => set("interviewType", (e.target.value || null) as EntryDraft["interviewType"])}>
                 <option value="">—</option>
                 {INTERVIEW_TYPES.map((k) => (
@@ -156,23 +155,23 @@ export default function NewEntry() {
               </select>
             </Field>
           </div>
-          <MarkdownEditor label="Resumen" value={draft.summary} onChange={(v) => set("summary", v)} rows={6} />
+          <MarkdownEditor label="Summary" value={draft.summary} onChange={(v) => set("summary", v)} rows={6} />
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Temas / preguntas">
+            <Field label="Topics / questions">
               <ListInput value={draft.topics} onChange={(v) => set("topics", v)} rows={4} />
             </Field>
-            <Field label="Decisiones">
+            <Field label="Decisions">
               <ListInput value={draft.decisions} onChange={(v) => set("decisions", v)} rows={4} />
             </Field>
-            <Field label="Siguientes pasos">
+            <Field label="Next steps">
               <ListInput value={draft.nextSteps} onChange={(v) => set("nextSteps", v)} rows={4} />
             </Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Entrevistadores">
+            <Field label="Interviewers">
               <ListInput value={draft.interviewers} onChange={(v) => set("interviewers", v)} rows={2} />
             </Field>
-            <Field label="¿Cómo fue? (1–5)">
+            <Field label="How did it go? (1–5)">
               <select className="input" value={draft.selfAssessment ?? ""} onChange={(e) => set("selfAssessment", e.target.value ? Number(e.target.value) : null)}>
                 <option value="">—</option>
                 {[1, 2, 3, 4, 5].map((n) => (
@@ -182,9 +181,9 @@ export default function NewEntry() {
                 ))}
               </select>
             </Field>
-            <Field label="Fase tras esta entrada">
+            <Field label="Stage after this entry">
               <select className="input" value={draft.suggestedStage ?? ""} onChange={(e) => set("suggestedStage", (e.target.value || null) as Stage | null)}>
-                <option value="">Sin cambio ({STAGE_LABEL[p.stage]})</option>
+                <option value="">No change ({STAGE_LABEL[p.stage]})</option>
                 {STAGES.map((s) => (
                   <option key={s} value={s}>
                     {STAGE_LABEL[s]}
@@ -197,7 +196,7 @@ export default function NewEntry() {
           <div className="rounded-lg border border-border p-3">
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={applyStatus} onChange={(e) => setApplyStatus(e.target.checked)} />
-              Cambiar estado del proceso
+              Change process status
             </label>
             {applyStatus && (
               <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
@@ -209,7 +208,7 @@ export default function NewEntry() {
                     </option>
                   ))}
                 </select>
-                <input className="input w-full" placeholder="Motivo" value={draft.statusReason} onChange={(e) => set("statusReason", e.target.value)} />
+                <input className="input w-full" placeholder="Reason" value={draft.statusReason} onChange={(e) => set("statusReason", e.target.value)} />
               </div>
             )}
           </div>
@@ -217,11 +216,11 @@ export default function NewEntry() {
           <div className="rounded-lg border border-border p-3">
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={applySummary} onChange={(e) => setApplySummary(e.target.checked)} />
-              Actualizar el resumen del proceso
+              Update the process summary
             </label>
             {applySummary && (
               <div className="mt-2">
-                <MarkdownEditor label="Nuevo resumen del proceso" value={draft.processSummary} onChange={(v) => set("processSummary", v)} rows={6} />
+                <MarkdownEditor label="New process summary" value={draft.processSummary} onChange={(v) => set("processSummary", v)} rows={6} />
               </div>
             )}
           </div>
@@ -229,10 +228,10 @@ export default function NewEntry() {
           <ErrorBox error={save.error} />
           <div className="flex justify-end gap-2">
             <button className="btn" onClick={() => setDraft(null)}>
-              Descartar propuesta
+              Discard proposal
             </button>
             <button className="btn btn-primary" onClick={saveDraft} disabled={save.isPending}>
-              {save.isPending ? "Guardando…" : "Guardar entrada"}
+              {save.isPending ? "Saving…" : "Save entry"}
             </button>
           </div>
         </section>
