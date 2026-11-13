@@ -40,14 +40,14 @@ export default function Dashboard() {
 
       <section>
         <SectionTitle action={<Link to="/procesos" className="text-sm text-accent hover:underline">Ver todos</Link>}>
-          En curso ({active.length})
+          Activos ({active.length})
         </SectionTitle>
         {active.length === 0 ? (
           <Empty>No hay procesos activos.</Empty>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
             {active.map((p) => (
-              <Link key={p.id} to={`/procesos/${p.id}`} className="card block p-4 transition-colors hover:border-accent/50">
+              <Link key={p.id} to={`/procesos/${p.id}`} className="card flex h-full flex-col p-4 transition-colors hover:border-accent/50">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="truncate font-medium">{p.company.name}</div>
@@ -55,12 +55,15 @@ export default function Dashboard() {
                   </div>
                   <StatusBadge status={p.status} />
                 </div>
-                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-3">
+                {/* Always reserve two lines so every card in a row has the same structure. */}
+                <p className={`mt-2 line-clamp-2 min-h-10 text-sm ${p.summary ? "text-text-2" : "text-text-3 italic"}`}>
+                  {p.summary ? p.summary.replace(/[#*_`>]/g, "").replace(/^\s*-\s+/gm, "") : "Sin resumen todavía"}
+                </p>
+                <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-2.5 text-xs text-text-3">
                   <span>Fase: {STAGE_LABEL[p.stage]}</span>
                   <span>{p.entryCount} {p.entryCount === 1 ? "entrada" : "entradas"}</span>
                   <span>Última actividad: {relDays(p.lastEntryDate ?? p.appliedAt)}</span>
                 </div>
-                {p.summary && <p className="mt-2 line-clamp-2 text-sm text-text-2">{p.summary.replace(/[#*_`>-]/g, "")}</p>}
               </Link>
             ))}
           </div>

@@ -95,12 +95,18 @@ function Header({ p }: { p: PD }) {
     <div className="space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">{p.company.name}</h1>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">{p.company.name}</h1>
+            <StatusBadge status={p.status} />
+            {change.isSuccess && !changing && (
+              <span className="text-xs text-good" role="status">
+                Estado actualizado ✓
+              </span>
+            )}
+          </div>
           <p className="text-text-2">{p.role || "Puesto sin especificar"}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {change.isSuccess && !changing && <span className="text-xs text-good">Estado actualizado ✓</span>}
-          <StatusBadge status={p.status} />
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <button className="btn" onClick={() => setChanging((v) => !v)} aria-expanded={changing}>
             Cambiar estado
           </button>
@@ -134,12 +140,13 @@ function Header({ p }: { p: PD }) {
       {changing && (
         <form
           className="card grid gap-3 p-4 sm:grid-cols-[12rem_10rem_1fr_auto] sm:items-end"
+          aria-describedby="status-help"
           onSubmit={(e) => {
             e.preventDefault();
             change.mutate();
           }}
         >
-          <Field label="Nuevo estado" hint={STATUS_HELP[to]}>
+          <Field label="Nuevo estado">
             <select className="input" value={to} onChange={(e) => setTo(e.target.value as ProcessStatus)}>
               {PROCESS_STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -157,6 +164,10 @@ function Header({ p }: { p: PD }) {
           <button className="btn btn-primary" disabled={to === p.status || change.isPending}>
             Guardar
           </button>
+          {/* Help lives on its own row so it doesn't push the first field out of line. */}
+          <p id="status-help" className="-mt-1 text-xs text-text-3 sm:col-span-4">
+            {STATUS_LABEL[to]}: {STATUS_HELP[to]}
+          </p>
           <div className="sm:col-span-4">
             <ErrorBox error={change.error} />
           </div>
