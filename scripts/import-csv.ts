@@ -1,7 +1,7 @@
 /**
  * Import the original spreadsheet (CSV) into Pathly.
  *
- *   pnpm seed:csv "<ruta al csv>" [--replace] [--llm] [--out data/seed.json]
+ *   pnpm seed:csv "<ruta al .csv o .numbers>" [--replace] [--llm] [--out data/seed.json]
  *
  * --replace  wipe the DB first (default: merge)
  * --llm      after importing, generate each process summary with the configured LLM
@@ -9,7 +9,9 @@
  * If the API is running it imports through it (so the in-memory DB stays in sync);
  * otherwise it writes straight to the DB file.
  */
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { LlmSettings } from "../src/shared/schema";
 import { Db } from "../server/db";
@@ -29,7 +31,24 @@ if (!file) {
   process.exit(1);
 }
 
-const { data, report } = csvToExport(decodeCsvBytes(fs.readFileSync(file)));
+/** A .numbers file is exported to CSV through Numbers itself (macOS only); the original is not modified. */
+function toCsvPath(input: string): string {
+  if (!/\.numbers$/i.test(input)) return input;
+  if (process.platform !== "darwin") throw new Error("Para importar .numbers hace falta macOS con Numbers; exporta a CSV a mano.");
+  const out = path.join(os.tmpdir(), `pathly-${Date.now()}.csv`);
+  const esc = (p: string) => p.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  execFileSync("osascript", [
+    "-e", `tell application "Numbers"`,
+    "-e", `set d to open POSIX file "${esc(path.resolve(input))}"`,
+    "-e", `export d to POSIX file "${esc(out)}" as CSV`,
+    "-e", `close d saving no`,
+    "-e", `end tell`,
+  ]);
+  console.log(`Exportado ${path.basename(input)} → CSV con Numbers`);
+  return out;
+}
+
+const { data, report } = csvToExport(decodeCsvBytes(fs.readFileSync(toCsvPath(file))));
 fs.mkdirSync(path.dirname(out!), { recursive: true });
 fs.writeFileSync(out!, JSON.stringify(data, null, 2));
 console.log(`CSV → ${data.companies.length} empresas, ${data.processes.length} procesos, ${data.entries.length} entradas (copia en ${out})`);

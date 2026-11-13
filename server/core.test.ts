@@ -22,6 +22,12 @@ test("classify uses the first mention, not future steps", () => {
   assert.equal(classify("Online assessment -> didn't pass").kind, "assessment");
 });
 
+test("csv delimiter is detected (Numbers/Excel ES export uses ;)", () => {
+  const semi = csvToExport('Empresa;Description;Stage;Status;\nAcme;"a; b";"- 01/10/2026: Llamada con la recruiter";Ongoing;\n').data;
+  assert.equal(semi.processes[0]!.status, "ongoing");
+  assert.equal(semi.companies[0]!.notes, "a; b");
+});
+
 test("mapStatus", () => {
   assert.equal(mapStatus("Oferta"), "offer");
   assert.equal(mapStatus("Discarded"), "withdrawn");

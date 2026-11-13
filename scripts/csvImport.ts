@@ -29,7 +29,15 @@ export function decodeCsvBytes(buf: Uint8Array): string {
   return text.replace(/^﻿/, "");
 }
 
-export function parseCsv(text: string): string[][] {
+/** Excel/Numbers in a Spanish locale export with ";" — pick whichever separator the header uses. */
+export function detectDelimiter(text: string): "," | ";" | "\t" {
+  const header = text.split(/\r?\n/, 1)[0] ?? "";
+  const count = (c: string) => header.split(c).length - 1;
+  const [best] = ([",", ";", "\t"] as const).map((c) => [c, count(c)] as const).sort((a, b) => b[1] - a[1]);
+  return best && best[1] > 0 ? best[0] : ",";
+}
+
+export function parseCsv(text: string, delimiter = detectDelimiter(text)): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let cell = "";
@@ -44,7 +52,7 @@ export function parseCsv(text: string): string[][] {
         } else quoted = false;
       } else cell += ch;
     } else if (ch === '"') quoted = true;
-    else if (ch === ",") {
+    else if (ch === delimiter) {
       row.push(cell);
       cell = "";
     } else if (ch === "\n" || ch === "\r") {

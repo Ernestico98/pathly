@@ -23,7 +23,7 @@ Se elige en **Ajustes**:
 Importar el Excel original (CSV exportado desde Excel):
 
 ```bash
-pnpm seed:csv "~/Downloads/Interview process(Sheet1).csv"            # fusiona
+pnpm seed:csv "~/Documents/Interview process(Sheet1).numbers"      # .numbers o .csv (, o ;); fusiona
 pnpm seed:csv "<csv>" --replace                                        # borra y reimporta
 pnpm seed:csv "<csv>" --llm                                            # + resumen IA de cada proceso
 ```
