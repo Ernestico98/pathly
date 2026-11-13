@@ -200,8 +200,13 @@ export type EntryWithUpdates = z.infer<typeof EntryWithUpdates>;
 // ---------- LLM settings ----------
 
 export const LlmSettings = z.object({
-  provider: z.enum(["anthropic", "ollama"]).default("anthropic"),
+  /** claude-code = your local Claude Code login (Pro/Max plan), no API key needed. */
+  provider: z.enum(["claude-code", "anthropic", "ollama"]).default("claude-code"),
+  claudeCodePath: z.string().default("claude"),
+  /** Claude Code model alias (sonnet, opus, haiku) or full model id. */
+  claudeCodeModel: z.string().default("sonnet"),
   anthropicModel: z.string().default("claude-sonnet-5-5"),
+  /** Web search when building company briefs (Claude Code and API). */
   anthropicWebSearch: z.boolean().default(true),
   ollamaUrl: z.string().default("http://localhost:11434"),
   ollamaModel: z.string().default("gemma4"),

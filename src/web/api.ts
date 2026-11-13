@@ -29,7 +29,7 @@ async function req<T>(method: string, url: string, body?: unknown): Promise<T> {
   return data as T;
 }
 
-export type SettingsResponse = { settings: LlmSettings; anthropicKeyPresent: boolean; ollamaModels: string[] };
+export type SettingsResponse = { settings: LlmSettings; anthropicKeyPresent: boolean; ollamaModels: string[]; claudeCodeVersion: string | null };
 
 export const api = {
   processes: () => req<ProcessWithCompany[]>("GET", "/processes"),

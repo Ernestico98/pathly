@@ -4,11 +4,21 @@ Seguimiento local de procesos de selección: cronología de cada entrevista, res
 
 ## Arrancar
 
+Requiere Node 24 (`nvm use`, ver `.nvmrc`).
+
 ```bash
 pnpm install
-cp .env.example .env          # opcional: ANTHROPIC_API_KEY=... para usar Claude
 pnpm dev                      # API en :8787 + web en http://localhost:5199
+PORT=8790 WEB_PORT=5200 pnpm dev   # si esos puertos están ocupados
 ```
+
+### IA
+
+Se elige en **Ajustes**:
+
+- **Claude Code (por defecto)**: usa tu instalación y login de Claude Code (`claude -p`), así que tira de tu plan Pro/Max, sin API key. Ejecuta sin herramientas (solo WebSearch/WebFetch para fichas de empresa), sin MCP, sin hooks y sin guardar sesiones. Si tienes `ANTHROPIC_API_KEY` en el entorno, se quita al lanzar el CLI para no facturar la API por error.
+- **API de Anthropic**: `ANTHROPIC_API_KEY` en `.env` (ver `.env.example`).
+- **Ollama**: modelo local (p. ej. `gemma4`); arranca Ollama antes.
 
 Importar el Excel original (CSV exportado desde Excel):
 
@@ -27,7 +37,7 @@ Tests: `pnpm test` · Tipos: `pnpm typecheck`
 | Modelo de datos (fuente única) | Zod | `src/shared/schema.ts` |
 | API local | Hono en Node, solo `127.0.0.1` | `server/app.ts` |
 | Persistencia | SQLite vía sql.js (WASM, sin compilación nativa) → `data/pathly.db` | `server/db.ts` |
-| IA | interfaz `LlmProvider`: Claude (`@anthropic-ai/sdk`, salidas estructuradas + búsqueda web) u Ollama (`/api/chat` con JSON Schema) | `server/llm/` |
+| IA | interfaz `LlmProvider`: Claude Code CLI (`--json-schema`), API de Claude (`@anthropic-ai/sdk`, salidas estructuradas + búsqueda web) u Ollama (`/api/chat` con JSON Schema) | `server/llm/` |
 | Web | React + React Router + TanStack Query + Tailwind | `src/web/` |
 
 `data/` está en `.gitignore`: tus datos no se versionan.

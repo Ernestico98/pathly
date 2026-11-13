@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import type { LlmSettings } from "../../src/shared/schema";
+import { ClaudeCodeProvider } from "./claudeCode";
 
 export class LlmError extends Error {
   constructor(
@@ -164,6 +165,7 @@ class OllamaProvider implements LlmProvider {
 }
 
 export function makeProvider(s: LlmSettings): LlmProvider {
+  if (s.provider === "claude-code") return new ClaudeCodeProvider(s);
   return s.provider === "ollama" ? new OllamaProvider(s) : new AnthropicProvider(s);
 }
 

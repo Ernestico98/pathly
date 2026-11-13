@@ -4,6 +4,18 @@ import type { LlmSettings } from "../../shared/schema";
 import { api } from "../api";
 import { ErrorBox, Field, Spinner } from "../components/ui";
 
+const PROVIDERS = [
+  { id: "claude-code", label: "Claude Code (tu plan)", hint: "Usa tu login de Claude Code, sin API key. Con búsqueda web." },
+  { id: "anthropic", label: "API de Anthropic", hint: "Requiere ANTHROPIC_API_KEY; se paga por uso." },
+  { id: "ollama", label: "Ollama (local)", hint: "Privado y gratis; más lento, sin búsqueda web." },
+] as const;
+
+const CLAUDE_CODE_MODELS = [
+  { id: "sonnet", label: "Sonnet (equilibrado)" },
+  { id: "haiku", label: "Haiku (rápido, gasta menos cuota)" },
+  { id: "opus", label: "Opus (máxima calidad, más cuota)" },
+];
+
 const CLAUDE_MODELS = [
   { id: "claude-sonnet-5-5", label: "Claude Sonnet 5.5 (equilibrado)" },
   { id: "claude-haiku-5-5", label: "Claude Haiku 5.5 (rápido y barato)" },
@@ -44,20 +56,47 @@ function LlmSection() {
         <h2 className="text-sm font-semibold">Modelo de IA</h2>
         <p className="text-xs text-text-3">Se usa para resumir entradas, crear fichas de empresa y resumir puestos.</p>
       </div>
-      <div className="flex gap-2" role="radiogroup" aria-label="Proveedor">
-        {(["anthropic", "ollama"] as const).map((pv) => (
+      <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Proveedor">
+        {PROVIDERS.map((pv) => (
           <button
-            key={pv}
+            key={pv.id}
             role="radio"
-            aria-checked={s.provider === pv}
-            onClick={() => set("provider", pv)}
-            className={`flex-1 rounded-lg border px-3 py-2 text-left text-sm ${s.provider === pv ? "border-accent bg-accent-soft" : "border-border hover:bg-surface-2"}`}
+            aria-checked={s.provider === pv.id}
+            onClick={() => set("provider", pv.id)}
+            className={`rounded-lg border px-3 py-2 text-left text-sm ${s.provider === pv.id ? "border-accent bg-accent-soft" : "border-border hover:bg-surface-2"}`}
           >
-            <div className="font-medium">{pv === "anthropic" ? "Claude (API de Anthropic)" : "Ollama (local)"}</div>
-            <div className="text-xs text-text-2">{pv === "anthropic" ? "Mejor calidad, búsqueda web para fichas" : "Privado, sin coste, sin búsqueda web"}</div>
+            <div className="font-medium">{pv.label}</div>
+            <div className="text-xs text-text-2">{pv.hint}</div>
           </button>
         ))}
       </div>
+
+      {s.provider === "claude-code" && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Modelo">
+            <select className="input" value={s.claudeCodeModel} onChange={(e) => set("claudeCodeModel", e.target.value)}>
+              {CLAUDE_CODE_MODELS.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                </option>
+              ))}
+              {!CLAUDE_CODE_MODELS.some((m) => m.id === s.claudeCodeModel) && <option value={s.claudeCodeModel}>{s.claudeCodeModel}</option>}
+            </select>
+          </Field>
+          <Field label="Ejecutable de Claude Code" hint="Normalmente basta con «claude». Si no lo encuentra, pon la ruta de `which claude`.">
+            <input className="input font-mono text-[13px]" value={s.claudeCodePath} onChange={(e) => set("claudeCodePath", e.target.value)} />
+          </Field>
+          <div className={`rounded-lg border px-3 py-2 text-sm sm:col-span-2 ${q.data.claudeCodeVersion ? "border-good/30 bg-good-soft text-good" : "border-warn/30 bg-warn-soft text-warn"}`}>
+            {q.data.claudeCodeVersion
+              ? `✓ ${q.data.claudeCodeVersion} detectado. Usa tu sesión de Claude Code (plan Pro/Max), sin API key; cuenta para los límites de uso de tu plan.`
+              : "⚠ No se encontró Claude Code con esa ruta. Guarda para volver a comprobar."}
+          </div>
+          <label className="flex items-center gap-2 text-sm sm:col-span-2">
+            <input type="checkbox" checked={s.anthropicWebSearch} onChange={(e) => set("anthropicWebSearch", e.target.checked)} />
+            Usar búsqueda web al generar fichas de empresa
+          </label>
+        </div>
+      )}
 
       {s.provider === "anthropic" ? (
         <div className="grid gap-4 sm:grid-cols-2">
@@ -81,7 +120,7 @@ function LlmSection() {
             Usar búsqueda web al generar fichas de empresa
           </label>
         </div>
-      ) : (
+      ) : s.provider === "ollama" ? (
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="URL de Ollama">
             <input className="input" value={s.ollamaUrl} onChange={(e) => set("ollamaUrl", e.target.value)} />
@@ -98,7 +137,7 @@ function LlmSection() {
             </datalist>
           </Field>
         </div>
-      )}
+      ) : null}
 
       <Field label="Idioma de los textos generados">
         <select className="input max-w-64" value={s.language} onChange={(e) => set("language", e.target.value as LlmSettings["language"])}>

@@ -13,6 +13,7 @@ import {
 import { computeAnalytics } from "./analytics";
 import { exportAll, exportEntriesCsv, exportProcessesCsv, importAll } from "./exportImport";
 import { fetchPageText } from "./llm/fetchPage";
+import { claudeCodeVersion } from "./llm/claudeCode";
 import { LlmError, listOllamaModels, makeProvider } from "./llm/provider";
 import { companyBrief, draftEntry, jobBrief, regenerateProcessSummary } from "./llm/tasks";
 import { NotFound, type Repo } from "./repo";
@@ -106,18 +107,20 @@ export function createApp(repo: Repo) {
   });
 
   // ---------- settings ----------
-  app.get("/settings", async (c) => {
-    const s = settings();
-    return c.json({
+  const settingsResponse = async (s: LlmSettings) => {
+    const [ollamaModels, claudeCode] = await Promise.all([listOllamaModels(s.ollamaUrl), claudeCodeVersion(s.claudeCodePath)]);
+    return {
       settings: s,
       anthropicKeyPresent: Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN),
-      ollamaModels: await listOllamaModels(s.ollamaUrl),
-    });
-  });
+      ollamaModels,
+      claudeCodeVersion: claudeCode,
+    };
+  };
+  app.get("/settings", async (c) => c.json(await settingsResponse(settings())));
   app.put("/settings", async (c) => {
     const s = await body(c, LlmSettings);
     repo.db.setSetting("llm", s);
-    return c.json({ settings: s, anthropicKeyPresent: Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN), ollamaModels: await listOllamaModels(s.ollamaUrl) });
+    return c.json(await settingsResponse(s));
   });
   app.post("/settings/test", async (c) => {
     const p = llm();
